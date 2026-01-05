@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>body { background-color: #f0f2f5; display: flex; align-items: center; min-height: 100vh; }</style>
+</head>
+<body>
+    <div class="container" style="max-width: 500px;">
+        <div class="card p-4 shadow-sm">
+            <h2 class="h4 mb-4 text-center">
+                <span th:text="${registro.id == null ? '📝 Novo Registro' : '✏️ Editar Registro'}"></span>
+            </h2>
+            
+            <form action="/salvar" method="post">
+                
+                <input type="hidden" name="id" th:value="${registro.id}">
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Disciplina</label>
+                    <select id="selectMateria" class="form-select" onchange="verificarMateria()">
+                        <option value="" selected disabled>Selecione...</option>
+                        <option th:each="materia : ${listaMaterias}" 
+                                th:value="${materia.id}" 
+                                th:text="${materia.nome}"
+                                th:selected="${registro.assunto != null && registro.assunto.materia.id == materia.id}">
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Assunto / Gênero</label>
+                    <select name="assuntoId" id="selectAssunto" class="form-select" disabled required>
+                        <option value="" selected>Primeiro escolha a disciplina ⬆️</option>
+                    </select>
+                    <input type="hidden" id="assuntoAntigoId" th:value="${registro.assunto != null ? registro.assunto.id : ''}">
+                </div>
+
+                <div class="mb-3" id="divTema" style="display: none;">
+                    <label class="form-label fw-bold text-success">Tema da Redação</label>
+                    <input type="text" name="tema" class="form-control" 
+                           th:value="${registro.tema}" placeholder="Digite o tema...">
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col">
+                        <label class="form-label" id="lblTotal">Questões</label>
+                        <input type="number" name="total" class="form-control" 
+                               th:value="${registro.totalQuestoes}" required>
+                    </div>
+                    <div class="col">
+                        <label class="form-label" id="lblAcertos">Acertos</label>
+                        <input type="number" name="acertos" class="form-control" 
+                               th:value="${registro.acertos}" required>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <a href="/" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Função Principal
+        async function verificarMateria() {
+            const selectMateria = document.getElementById('selectMateria');
+            const materiaId = selectMateria.value;
+            
+            if(!materiaId) return;
+
+            const materiaNome = selectMateria.options[selectMateria.selectedIndex].text;
+            
+            // Carrega os assuntos
+            await carregarAssuntos(materiaId);
+
+            // Ajusta visual se for Redação
+            ajustarLayout(materiaNome);
+        }
+
+        async function carregarAssuntos(materiaId) {
+            const selectAssunto = document.getElementById('selectAssunto');
+            const assuntoAntigoId = document.getElementById('assuntoAntigoId').value;
+
+            selectAssunto.innerHTML = '<option>Carregando...</option>';
+            selectAssunto.disabled = true;
+
+            try {
+                const resp = await fetch(`/assuntos/por-materia/${materiaId}`);
+                const lista = await resp.json();
+
+                selectAssunto.innerHTML = '<option value="" disabled selected>Selecione...</option>';
+                
+                lista.forEach(a => {
+                    let opt = document.createElement('option');
+                    opt.value = a.id;
+                    opt.text = a.nome;
+                    
+                    // Se estivermos editando, seleciona o assunto que já estava salvo
+                    if (assuntoAntigoId && a.id == assuntoAntigoId) {
+                        opt.selected = true;
+                    }
+                    
+                    selectAssunto.appendChild(opt);
+                });
+                selectAssunto.disabled = false;
+            } catch (e) { console.error(e); }
+        }
+
+        function ajustarLayout(materiaNome) {
+            const divTema = document.getElementById('divTema');
+            const lblTotal = document.getElementById('lblTotal');
+            const lblAcertos = document.getElementById('lblAcertos');
+
+            if (materiaNome.includes('Redação')) {
+                divTema.style.display = 'block';
+                lblTotal.innerText = 'Nota Máxima';
+                lblAcertos.innerText = 'Minha Nota';
+            } else {
+                divTema.style.display = 'none';
+                lblTotal.innerText = 'Questões';
+                lblAcertos.innerText = 'Acertos';
+            }
+        }
+
+        // --- MÁGICA DE INICIALIZAÇÃO ---
+        // Se abriu a página e já tem matéria selecionada (Edição), roda o script sozinho
+        window.onload = function() {
+            const selectMateria = document.getElementById('selectMateria');
+            if (selectMateria.value) {
+                verificarMateria();
+            }
+        };
+    </script>
+</body>
+</html>

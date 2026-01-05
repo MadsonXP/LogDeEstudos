@@ -16,16 +16,19 @@ public class Registro {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private LocalDate data; // Data do estudo
-    private Integer totalQuestoes; // Quantas fez (ex: 10)
-    private Integer acertos;       // Quantas acertou (ex: 8)
+    private LocalDate data;
+    private Integer totalQuestoes; // Nota Máxima (se for Redação)
+    private Integer acertos;       // Nota Obtida (se for Redação)
+    
+    // NOVO: Campo de texto livre para o usuário digitar o tema
+    private String tema; 
 
     @ManyToOne
     @JoinColumn(name = "assunto_id")
     private Assunto assunto;
 
     public Registro() {
-        this.data = LocalDate.now(); // Já preenche com a data de hoje automático
+        this.data = LocalDate.now();
     }
 
     // Getters e Setters
@@ -41,11 +44,12 @@ public class Registro {
     public Integer getAcertos() { return acertos; }
     public void setAcertos(Integer acertos) { this.acertos = acertos; }
 
+    public String getTema() { return tema; }
+    public void setTema(String tema) { this.tema = tema; }
+
     public Assunto getAssunto() { return assunto; }
     public void setAssunto(Assunto assunto) { this.assunto = assunto; }
 
-    // O Java converte métodos que começam com "get" em campos no JSON automaticamente!
-    
     public Double getAproveitamento() {
         if (totalQuestoes == 0) return 0.0;
         return (double) acertos / totalQuestoes * 100;

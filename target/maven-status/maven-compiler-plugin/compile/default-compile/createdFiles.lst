@@ -1,0 +1,14 @@
+com\madson\logdeestudos\controller\AssuntoController$NovoAssuntoRequest.class
+com\madson\logdeestudos\repository\MateriaRepository.class
+com\madson\logdeestudos\model\Materia.class
+com\madson\logdeestudos\controller\RegistroController$NovoRegistroRequest.class
+com\madson\logdeestudos\controller\MateriaController.class
+com\madson\logdeestudos\LogDeEstudosApplication.class
+com\madson\logdeestudos\service\CargaInicial.class
+com\madson\logdeestudos\repository\AssuntoRepository.class
+com\madson\logdeestudos\controller\RegistroController.class
+com\madson\logdeestudos\controller\AssuntoController.class
+com\madson\logdeestudos\model\Assunto.class
+com\madson\logdeestudos\repository\RegistroRepository.class
+com\madson\logdeestudos\model\Registro.class
+com\madson\logdeestudos\controller\PaginaController.class
