@@ -1,0 +1,29 @@
+### 1. Ver quais matérias existem (e pegar o ID de Matemática)
+GET http://localhost:8080/materias
+
+### 2. Cadastrar um Assunto (Use o ID que você viu acima. Ex: 2)
+POST http://localhost:8080/assuntos
+Content-Type: application/json
+
+{
+    "nome": "Logaritmos",
+    "materiaId": 2
+}
+
+### 3. Conferir se gravou
+GET http://localhost:8080/assuntos
+
+### Criar um registro de estudo (10 questões, 8 acertos no assunto Logaritmos)
+# Nota: Primeiro cria o assunto Logaritmos de novo (POST /assuntos), pois o banco reiniciou!
+POST http://localhost:8080/registros
+Content-Type: application/json
+
+{
+    "assuntoId": 1, 
+    "totalQuestoes": 10,
+    "acertos": 8
+}
+
+### Ver os registros
+GET http://localhost:8080/registros
+
