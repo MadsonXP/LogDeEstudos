@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">🚀 StudyLog</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="/">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link active fw-bold" href="/historico">Histórico Completo</a></li>
+                </ul>
+                <a href="/novo" class="btn btn-light text-primary fw-bold">+ Novo Registro</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 1000px;">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h4 class="mb-4 text-secondary">📜 Histórico de Estudos</h4>
+                
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Atividade</th>
+                            <th class="text-center">Resultado</th>
+                            <th>Status</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="registro : ${listaRegistros}">
+                            <td th:text="${#temporals.format(registro.data, 'dd/MM/yyyy')}"></td>
+                            <td>
+                                <div th:if="${registro.tema != null and !registro.tema.isEmpty()}">
+                                    <span class="badge bg-warning text-dark">Redação</span>
+                                    <span th:text="${registro.tema}" class="fw-bold d-block"></span>
+                                </div>
+                                <div th:unless="${registro.tema != null and !registro.tema.isEmpty()}">
+                                    <span th:text="${registro.assunto.materia.nome}" class="small text-muted fw-bold text-uppercase"></span>
+                                    <div th:text="${registro.assunto.nome}" class="fw-bold"></div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span th:text="${registro.acertos}" class="fw-bold"></span> / <span th:text="${registro.totalQuestoes}"></span>
+                            </td>
+                            <td><span th:text="${registro.status}" class="badge bg-light text-dark border"></span></td>
+                            <td class="text-center">
+                                <a th:href="@{/editar/{id}(id=${registro.id})}" class="btn btn-sm btn-outline-primary me-1">✏️</a>
+                                <a th:href="@{/deletar/{id}(id=${registro.id})}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Apagar?')">🗑️</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

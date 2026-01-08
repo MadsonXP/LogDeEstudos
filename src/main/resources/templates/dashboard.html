@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+    
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">🚀 StudyLog</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link active fw-bold" href="/">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/historico">Histórico Completo</a></li>
+                </ul>
+                <a href="/novo" class="btn btn-light text-primary fw-bold">+ Novo Registro</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 1100px;">
+        
+        <h3 class="mb-4 text-secondary">📊 Visão Geral (Exceto Redação)</h3>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 text-center">
+                    <h6 class="text-muted text-uppercase fw-bold small">Questões Totais</h6>
+                    <h2 class="display-6 fw-bold text-primary" th:text="${kpiTotal}">0</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 text-center">
+                    <h6 class="text-muted text-uppercase fw-bold small">Acertos</h6>
+                    <h2 class="display-6 fw-bold text-success" th:text="${kpiAcertos}">0</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 text-center">
+                    <h6 class="text-muted text-uppercase fw-bold small">Aproveitamento</h6>
+                    <h2 class="display-6 fw-bold text-info"><span th:text="${kpiPorcentagem}">0</span>%</h2>
+                </div>
+            </div>
+             <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 text-center bg-warning bg-opacity-10">
+                    <h6 class="text-muted text-uppercase fw-bold small">Redações Feitas</h6>
+                    <h2 class="display-6 fw-bold text-warning" th:text="${kpiRedacoes}">0</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0 fw-bold text-secondary">📈 Desempenho Diário</h5>
+                <div class="btn-group">
+                    <a href="/?dias=7" th:classappend="${periodoSelecionado == 7} ? 'active'" class="btn btn-outline-primary btn-sm">7 Dias</a>
+                    <a href="/?dias=30" th:classappend="${periodoSelecionado == 30} ? 'active'" class="btn btn-outline-primary btn-sm">Mensal</a>
+                    <a href="/?dias=365" th:classappend="${periodoSelecionado == 365} ? 'active'" class="btn btn-outline-primary btn-sm">Anual</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="meuGrafico" style="max-height: 400px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script th:inline="javascript">
+        // Recebendo os dados do Java
+        const labels = /*[[${graficoLabels}]]*/ [];
+        const totalData = /*[[${graficoTotal}]]*/ [];
+        const acertosData = /*[[${graficoAcertos}]]*/ [];
+        const errosData = /*[[${graficoErros}]]*/ [];
+
+        const ctx = document.getElementById('meuGrafico').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'bar', // TIPO BARRA (Colunas)
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Total Questões',
+                        data: totalData,
+                        backgroundColor: 'rgba(13, 110, 253, 0.8)', // Azul
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Acertos',
+                        data: acertosData,
+                        backgroundColor: 'rgba(25, 135, 84, 0.8)', // Verde
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Erros',
+                        data: errosData,
+                        backgroundColor: 'rgba(220, 53, 69, 0.8)', // Vermelho
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Quantidade' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { mode: 'index', intersect: false } // Mostra os 3 juntos ao passar o mouse
+                }
+            }
+        });
+    </script>
+</body>
+</html>

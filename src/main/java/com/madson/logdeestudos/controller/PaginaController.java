@@ -1,5 +1,14 @@
 package com.madson.logdeestudos.controller;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,70 +28,110 @@ public class PaginaController {
     private final AssuntoRepository assuntoRepository;
     private final MateriaRepository materiaRepository;
 
-    public PaginaController(RegistroRepository registroRepository, 
-                            AssuntoRepository assuntoRepository,
-                            MateriaRepository materiaRepository) {
+    public PaginaController(RegistroRepository registroRepository, AssuntoRepository assuntoRepository, MateriaRepository materiaRepository) {
         this.registroRepository = registroRepository;
         this.assuntoRepository = assuntoRepository;
         this.materiaRepository = materiaRepository;
     }
 
+    // --- DASHBOARD ---
     @GetMapping("/")
-    public String carregarHome(Model model) {
-        model.addAttribute("listaRegistros", registroRepository.findAll());
-        return "home";
+    public String carregarDashboard(@RequestParam(defaultValue = "7") Integer dias, Model model) {
+        List<Registro> todos = registroRepository.findAll();
+        
+        List<Registro> soQuestoes = todos.stream()
+            .filter(r -> r.getTema() == null || r.getTema().isEmpty())
+            .collect(Collectors.toList());
+
+        int totalQuest = soQuestoes.stream().mapToInt(Registro::getTotalQuestoes).sum();
+        int totalAcertos = soQuestoes.stream().mapToInt(Registro::getAcertos).sum();
+        double aproveitamento = totalQuest > 0 ? (double) totalAcertos / totalQuest * 100 : 0;
+        long totalRedacoes = todos.stream().filter(r -> r.getTema() != null && !r.getTema().isEmpty()).count();
+
+        LocalDate dataLimite = LocalDate.now().minusDays(dias);
+        
+        Map<LocalDate, List<Registro>> agrupadoPorData = soQuestoes.stream()
+                .filter(r -> !r.getData().isBefore(dataLimite))
+                .collect(Collectors.groupingBy(Registro::getData, TreeMap::new, Collectors.toList()));
+
+        List<String> labels = new ArrayList<>();
+        List<Integer> dadosTotal = new ArrayList<>();
+        List<Integer> dadosAcertos = new ArrayList<>();
+        List<Integer> dadosErros = new ArrayList<>();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
+
+        for (Map.Entry<LocalDate, List<Registro>> entrada : agrupadoPorData.entrySet()) {
+            labels.add(entrada.getKey().format(fmt));
+            int t = entrada.getValue().stream().mapToInt(Registro::getTotalQuestoes).sum();
+            int a = entrada.getValue().stream().mapToInt(Registro::getAcertos).sum();
+            dadosTotal.add(t);
+            dadosAcertos.add(a);
+            dadosErros.add(t - a);
+        }
+
+        model.addAttribute("kpiTotal", totalQuest);
+        model.addAttribute("kpiAcertos", totalAcertos);
+        model.addAttribute("kpiPorcentagem", String.format("%.1f", aproveitamento));
+        model.addAttribute("kpiRedacoes", totalRedacoes);
+        model.addAttribute("graficoLabels", labels);
+        model.addAttribute("graficoTotal", dadosTotal);
+        model.addAttribute("graficoAcertos", dadosAcertos);
+        model.addAttribute("graficoErros", dadosErros);
+        model.addAttribute("periodoSelecionado", dias);
+
+        return "dashboard";
     }
 
-    // TELA DE NOVO (Cria um registro vazio para o formulário não dar erro)
+    // --- HISTÓRICO ---
+    @GetMapping("/historico")
+    public String carregarHistorico(Model model) {
+        List<Registro> lista = registroRepository.findAll().stream()
+                .sorted(Comparator.comparing(Registro::getId).reversed()) // Mais recentes no topo
+                .collect(Collectors.toList());
+        model.addAttribute("listaRegistros", lista);
+        return "historico";
+    }
+
+    // --- CADASTRO ---
     @GetMapping("/novo")
     public String carregarFormulario(Model model) {
         model.addAttribute("listaMaterias", materiaRepository.findAll());
-        model.addAttribute("registro", new Registro()); // Envia objeto vazio
+        model.addAttribute("registro", new Registro()); // Data já vem como "hoje" por padrão
         return "registrar";
     }
 
-    // TELA DE EDITAR (Busca o registro antigo e manda para o formulário)
     @GetMapping("/editar/{id}")
     public String carregarEdicao(@PathVariable Long id, Model model) {
         Registro antigo = registroRepository.findById(id).orElseThrow();
-        
         model.addAttribute("listaMaterias", materiaRepository.findAll());
-        model.addAttribute("registro", antigo); // Envia o registro cheio
+        model.addAttribute("registro", antigo);
         return "registrar";
     }
 
     @PostMapping("/salvar")
-    public String salvarRegistro(@RequestParam(required = false) Long id, // ID agora é opcional
+    public String salvarRegistro(@RequestParam(required = false) Long id, 
+                                 @RequestParam LocalDate data, // <--- NOVO: Recebe a data do formulário
                                  @RequestParam Long assuntoId, 
                                  @RequestParam Integer total, 
                                  @RequestParam Integer acertos,
                                  @RequestParam(required = false) String tema) {
         
-        Registro registro;
-
-        if (id != null) {
-            // Se tem ID, estamos EDITANDO um existente
-            registro = registroRepository.findById(id).orElseThrow();
-        } else {
-            // Se não tem ID, estamos CRIANDO um novo
-            registro = new Registro();
-        }
-
-        var assunto = assuntoRepository.findById(assuntoId).orElseThrow();
+        Registro registro = (id != null) ? registroRepository.findById(id).orElseThrow() : new Registro();
         
-        registro.setAssunto(assunto);
+        registro.setData(data); // <--- Atualiza com a data escolhida
+        registro.setAssunto(assuntoRepository.findById(assuntoId).orElseThrow());
         registro.setTotalQuestoes(total);
         registro.setAcertos(acertos);
         registro.setTema(tema);
         
-        registroRepository.save(registro); // O 'save' serve para criar e atualizar
-
-        return "redirect:/";
+        registroRepository.save(registro);
+        
+        return "redirect:/historico";
     }
 
     @GetMapping("/deletar/{id}")
     public String deletarRegistro(@PathVariable Long id) {
         registroRepository.deleteById(id);
-        return "redirect:/";
+        return "redirect:/historico";
     }
 }
