@@ -18,6 +18,12 @@
                 <input type="hidden" name="id" th:value="${registro.id}">
 
                 <div class="mb-3">
+                    <label class="form-label fw-bold">Data da Atividade</label>
+                    <input type="date" name="data" class="form-control" 
+                           th:value="${registro.data}" required>
+                </div>
+
+                <div class="mb-3">
                     <label class="form-label fw-bold">Disciplina</label>
                     <select id="selectMateria" class="form-select" onchange="verificarMateria()">
                         <option value="" selected disabled>Selecione...</option>
@@ -58,52 +64,36 @@
 
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary">Salvar</button>
-                    <a href="/" class="btn btn-outline-secondary">Cancelar</a>
+                    <a href="/historico" class="btn btn-outline-secondary">Cancelar</a>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        // Função Principal
         async function verificarMateria() {
             const selectMateria = document.getElementById('selectMateria');
             const materiaId = selectMateria.value;
-            
             if(!materiaId) return;
-
             const materiaNome = selectMateria.options[selectMateria.selectedIndex].text;
-            
-            // Carrega os assuntos
             await carregarAssuntos(materiaId);
-
-            // Ajusta visual se for Redação
             ajustarLayout(materiaNome);
         }
 
         async function carregarAssuntos(materiaId) {
             const selectAssunto = document.getElementById('selectAssunto');
             const assuntoAntigoId = document.getElementById('assuntoAntigoId').value;
-
             selectAssunto.innerHTML = '<option>Carregando...</option>';
             selectAssunto.disabled = true;
-
             try {
                 const resp = await fetch(`/assuntos/por-materia/${materiaId}`);
                 const lista = await resp.json();
-
                 selectAssunto.innerHTML = '<option value="" disabled selected>Selecione...</option>';
-                
                 lista.forEach(a => {
                     let opt = document.createElement('option');
                     opt.value = a.id;
                     opt.text = a.nome;
-                    
-                    // Se estivermos editando, seleciona o assunto que já estava salvo
-                    if (assuntoAntigoId && a.id == assuntoAntigoId) {
-                        opt.selected = true;
-                    }
-                    
+                    if (assuntoAntigoId && a.id == assuntoAntigoId) { opt.selected = true; }
                     selectAssunto.appendChild(opt);
                 });
                 selectAssunto.disabled = false;
@@ -114,7 +104,6 @@
             const divTema = document.getElementById('divTema');
             const lblTotal = document.getElementById('lblTotal');
             const lblAcertos = document.getElementById('lblAcertos');
-
             if (materiaNome.includes('Redação')) {
                 divTema.style.display = 'block';
                 lblTotal.innerText = 'Nota Máxima';
@@ -126,13 +115,9 @@
             }
         }
 
-        // --- MÁGICA DE INICIALIZAÇÃO ---
-        // Se abriu a página e já tem matéria selecionada (Edição), roda o script sozinho
         window.onload = function() {
             const selectMateria = document.getElementById('selectMateria');
-            if (selectMateria.value) {
-                verificarMateria();
-            }
+            if (selectMateria.value) { verificarMateria(); }
         };
     </script>
 </body>
