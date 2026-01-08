@@ -5,6 +5,13 @@
     <title>Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        .btn-tab.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+        .btn-tab { color: #6c757d; border-color: #dee2e6; }
+        
+        /* Efeito legal na barra de progresso */
+        .progress-bar { transition: width 1s ease-in-out; }
+    </style>
 </head>
 <body class="bg-light">
     
@@ -23,7 +30,28 @@
 
     <div class="container" style="max-width: 1100px;">
         
-        <h3 class="mb-4 text-secondary">📊 Visão Geral (Exceto Redação)</h3>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <h5 class="fw-bold text-secondary">🎯 Meta da Semana (7 Dias)</h5>
+                    <span class="fw-bold text-primary">
+                        <span th:text="${metaAtual}">0</span> / <span th:text="${metaAlvo}">50</span> Questões
+                    </span>
+                </div>
+                
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         th:style="'width: ' + ${metaPorcentagem} + '%'"
+                         th:classappend="${metaPorcentagem >= 100 ? 'bg-success' : (metaPorcentagem >= 50 ? 'bg-warning' : 'bg-danger')}">
+                        <span th:text="${metaPorcentagem} + '%'">0%</span>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block">Mantenha a constância para atingir 100%!</small>
+            </div>
+        </div>
+
+        <h3 class="mb-4 text-secondary">📊 Visão Geral</h3>
 
         <div class="row mb-4">
             <div class="col-md-3">
@@ -46,77 +74,125 @@
             </div>
              <div class="col-md-3">
                 <div class="card border-0 shadow-sm p-3 text-center bg-warning bg-opacity-10">
-                    <h6 class="text-muted text-uppercase fw-bold small">Redações Feitas</h6>
+                    <h6 class="text-muted text-uppercase fw-bold small">Redações</h6>
                     <h2 class="display-6 fw-bold text-warning" th:text="${kpiRedacoes}">0</h2>
                 </div>
             </div>
         </div>
 
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <h5 class="mb-0 fw-bold text-secondary">📈 Desempenho Diário</h5>
-                <div class="btn-group">
-                    <a href="/?dias=7" th:classappend="${periodoSelecionado == 7} ? 'active'" class="btn btn-outline-primary btn-sm">7 Dias</a>
-                    <a href="/?dias=30" th:classappend="${periodoSelecionado == 30} ? 'active'" class="btn btn-outline-primary btn-sm">Mensal</a>
-                    <a href="/?dias=365" th:classappend="${periodoSelecionado == 365} ? 'active'" class="btn btn-outline-primary btn-sm">Anual</a>
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-tab active" id="btnTabQuestoes" onclick="mudarAba('questoes')">
+                            📊 Questões
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-tab" id="btnTabRedacao" onclick="mudarAba('redacao')">
+                            📝 Redação
+                        </button>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center">
+                        <form action="/" method="get" class="d-flex me-2">
+                            <input type="hidden" name="dias" th:value="${periodoSelecionado}">
+                            <select name="materiaId" class="form-select form-select-sm" onchange="this.form.submit()" style="max-width: 180px;">
+                                <option value="">Todas as Matérias</option>
+                                <option th:each="materia : ${listaMaterias}" 
+                                        th:value="${materia.id}" 
+                                        th:text="${materia.nome}"
+                                        th:selected="${materia.id == materiaSelecionada}">
+                                </option>
+                            </select>
+                        </form>
+
+                        <div class="btn-group">
+                            <a th:href="@{/(dias=7, materiaId=${materiaSelecionada})}" th:classappend="${periodoSelecionado == 7} ? 'active'" class="btn btn-outline-primary btn-sm">7d</a>
+                            <a th:href="@{/(dias=30, materiaId=${materiaSelecionada})}" th:classappend="${periodoSelecionado == 30} ? 'active'" class="btn btn-outline-primary btn-sm">30d</a>
+                            <a th:href="@{/(dias=365, materiaId=${materiaSelecionada})}" th:classappend="${periodoSelecionado == 365} ? 'active'" class="btn btn-outline-primary btn-sm">Ano</a>
+                        </div>
+                    </div>
                 </div>
             </div>
+
             <div class="card-body">
-                <canvas id="meuGrafico" style="max-height: 400px;"></canvas>
+                <div id="containerQuestoes" style="display: block;">
+                    <h6 class="text-center text-muted mb-3">Desempenho em Exercícios</h6>
+                    <canvas id="graficoQuestoes" style="max-height: 400px;"></canvas>
+                </div>
+
+                <div id="containerRedacao" style="display: none;">
+                    <h6 class="text-center text-muted mb-3">Evolução da Nota de Redação</h6>
+                    <canvas id="graficoRedacao" style="max-height: 400px;"></canvas>
+                    <p class="text-center text-muted small mt-2">Se a linha tocar o zero, significa que não houve redação naquele dia.</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script th:inline="javascript">
-        // Recebendo os dados do Java
         const labels = /*[[${graficoLabels}]]*/ [];
         const totalData = /*[[${graficoTotal}]]*/ [];
         const acertosData = /*[[${graficoAcertos}]]*/ [];
         const errosData = /*[[${graficoErros}]]*/ [];
+        const redacaoData = /*[[${graficoRedacaoNotas}]]*/ [];
 
-        const ctx = document.getElementById('meuGrafico').getContext('2d');
-        
-        new Chart(ctx, {
-            type: 'bar', // TIPO BARRA (Colunas)
+        const ctxQ = document.getElementById('graficoQuestoes').getContext('2d');
+        new Chart(ctxQ, {
+            type: 'bar',
             data: {
                 labels: labels,
                 datasets: [
-                    {
-                        label: 'Total Questões',
-                        data: totalData,
-                        backgroundColor: 'rgba(13, 110, 253, 0.8)', // Azul
-                        borderRadius: 4
-                    },
-                    {
-                        label: 'Acertos',
-                        data: acertosData,
-                        backgroundColor: 'rgba(25, 135, 84, 0.8)', // Verde
-                        borderRadius: 4
-                    },
-                    {
-                        label: 'Erros',
-                        data: errosData,
-                        backgroundColor: 'rgba(220, 53, 69, 0.8)', // Vermelho
-                        borderRadius: 4
-                    }
+                    { label: 'Total', data: totalData, backgroundColor: '#0d6efd', borderRadius: 4 },
+                    { label: 'Acertos', data: acertosData, backgroundColor: '#198754', borderRadius: 4 },
+                    { label: 'Erros', data: errosData, backgroundColor: '#dc3545', borderRadius: 4 }
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        title: { display: true, text: 'Quantidade' }
-                    }
-                },
-                plugins: {
-                    legend: { position: 'top' },
-                    tooltip: { mode: 'index', intersect: false } // Mostra os 3 juntos ao passar o mouse
-                }
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } },
+                plugins: { tooltip: { mode: 'index', intersect: false } }
             }
         });
+
+        const ctxR = document.getElementById('graficoRedacao').getContext('2d');
+        new Chart(ctxR, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nota da Redação',
+                    data: redacaoData,
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                    fill: true, tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 1000 } }
+            }
+        });
+
+        function mudarAba(tipo) {
+            const divQ = document.getElementById('containerQuestoes');
+            const divR = document.getElementById('containerRedacao');
+            const btnQ = document.getElementById('btnTabQuestoes');
+            const btnR = document.getElementById('btnTabRedacao');
+
+            if (tipo === 'questoes') {
+                divQ.style.display = 'block';
+                divR.style.display = 'none';
+                btnQ.classList.add('active');
+                btnR.classList.remove('active');
+            } else {
+                divQ.style.display = 'none';
+                divR.style.display = 'block';
+                btnQ.classList.remove('active');
+                btnR.classList.add('active');
+            }
+        }
     </script>
 </body>
 </html>
