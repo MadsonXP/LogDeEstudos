@@ -8,8 +8,6 @@
     <style>
         .btn-tab.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .btn-tab { color: #6c757d; border-color: #dee2e6; }
-        
-        /* Efeito legal na barra de progresso */
         .progress-bar { transition: width 1s ease-in-out; }
     </style>
 </head>
@@ -21,9 +19,20 @@
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item"><a class="nav-link active fw-bold" href="/">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/historico">Histórico Completo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/historico">Histórico</a></li>
                 </ul>
-                <a href="/novo" class="btn btn-light text-primary fw-bold">+ Novo Registro</a>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center bg-white bg-opacity-25 rounded-pill px-3 py-1 text-white" 
+                         title="Dias seguidos estudando">
+                        <span class="fs-5 me-1">🔥</span>
+                        <span class="fw-bold" th:text="${foguinho}">0</span>
+                    </div>
+
+                    <a href="/cronometro" class="btn btn-outline-light fw-bold rounded-pill">⏱️ Modo Foco</a>
+
+                    <a href="/novo" class="btn btn-light text-primary fw-bold rounded-pill">+ Registro</a>
+                </div>
             </div>
         </div>
     </nav>
@@ -38,7 +47,6 @@
                         <span th:text="${metaAtual}">0</span> / <span th:text="${metaAlvo}">50</span> Questões
                     </span>
                 </div>
-                
                 <div class="progress" style="height: 25px;">
                     <div class="progress-bar progress-bar-striped progress-bar-animated" 
                          role="progressbar" 
@@ -85,12 +93,8 @@
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                     
                     <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-secondary btn-tab active" id="btnTabQuestoes" onclick="mudarAba('questoes')">
-                            📊 Questões
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-tab" id="btnTabRedacao" onclick="mudarAba('redacao')">
-                            📝 Redação
-                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-tab active" id="btnTabQuestoes" onclick="mudarAba('questoes')">📊 Questões</button>
+                        <button type="button" class="btn btn-outline-secondary btn-tab" id="btnTabRedacao" onclick="mudarAba('redacao')">📝 Redação</button>
                     </div>
 
                     <div class="d-flex gap-2 align-items-center">
@@ -120,7 +124,6 @@
                     <h6 class="text-center text-muted mb-3">Desempenho em Exercícios</h6>
                     <canvas id="graficoQuestoes" style="max-height: 400px;"></canvas>
                 </div>
-
                 <div id="containerRedacao" style="display: none;">
                     <h6 class="text-center text-muted mb-3">Evolução da Nota de Redação</h6>
                     <canvas id="graficoRedacao" style="max-height: 400px;"></canvas>
@@ -149,11 +152,7 @@
                     { label: 'Erros', data: errosData, backgroundColor: '#dc3545', borderRadius: 4 }
                 ]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true } },
-                plugins: { tooltip: { mode: 'index', intersect: false } }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { tooltip: { mode: 'index', intersect: false } } }
         });
 
         const ctxR = document.getElementById('graficoRedacao').getContext('2d');
@@ -161,18 +160,9 @@
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Nota da Redação',
-                    data: redacaoData,
-                    borderColor: '#ffc107',
-                    backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                    fill: true, tension: 0.3
-                }]
+                datasets: [{ label: 'Nota da Redação', data: redacaoData, borderColor: '#ffc107', backgroundColor: 'rgba(255, 193, 7, 0.2)', fill: true, tension: 0.3 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true, max: 1000 } }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1000 } } }
         });
 
         function mudarAba(tipo) {
@@ -182,15 +172,11 @@
             const btnR = document.getElementById('btnTabRedacao');
 
             if (tipo === 'questoes') {
-                divQ.style.display = 'block';
-                divR.style.display = 'none';
-                btnQ.classList.add('active');
-                btnR.classList.remove('active');
+                divQ.style.display = 'block'; divR.style.display = 'none';
+                btnQ.classList.add('active'); btnR.classList.remove('active');
             } else {
-                divQ.style.display = 'none';
-                divR.style.display = 'block';
-                btnQ.classList.remove('active');
-                btnR.classList.add('active');
+                divQ.style.display = 'none'; divR.style.display = 'block';
+                btnQ.classList.remove('active'); btnR.classList.add('active');
             }
         }
     </script>
