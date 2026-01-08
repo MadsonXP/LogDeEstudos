@@ -21,16 +21,11 @@
                     <li class="nav-item"><a class="nav-link active fw-bold" href="/">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="/historico">Histórico</a></li>
                 </ul>
-                
                 <div class="d-flex align-items-center gap-3">
-                    <div class="d-flex align-items-center bg-white bg-opacity-25 rounded-pill px-3 py-1 text-white" 
-                         title="Dias seguidos estudando">
-                        <span class="fs-5 me-1">🔥</span>
-                        <span class="fw-bold" th:text="${foguinho}">0</span>
+                    <div class="d-flex align-items-center bg-white bg-opacity-25 rounded-pill px-3 py-1 text-white" title="Dias seguidos estudando">
+                        <span class="fs-5 me-1">🔥</span> <span class="fw-bold" th:text="${foguinho}">0</span>
                     </div>
-
                     <a href="/cronometro" class="btn btn-outline-light fw-bold rounded-pill">⏱️ Modo Foco</a>
-
                     <a href="/novo" class="btn btn-light text-primary fw-bold rounded-pill">+ Registro</a>
                 </div>
             </div>
@@ -43,19 +38,15 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
                     <h5 class="fw-bold text-secondary">🎯 Meta da Semana (7 Dias)</h5>
-                    <span class="fw-bold text-primary">
-                        <span th:text="${metaAtual}">0</span> / <span th:text="${metaAlvo}">50</span> Questões
-                    </span>
+                    <span class="fw-bold text-primary"><span th:text="${metaAtual}">0</span> / <span th:text="${metaAlvo}">50</span> Questões</span>
                 </div>
                 <div class="progress" style="height: 25px;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                         role="progressbar" 
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
                          th:style="'width: ' + ${metaPorcentagem} + '%'"
                          th:classappend="${metaPorcentagem >= 100 ? 'bg-success' : (metaPorcentagem >= 50 ? 'bg-warning' : 'bg-danger')}">
                         <span th:text="${metaPorcentagem} + '%'">0%</span>
                     </div>
                 </div>
-                <small class="text-muted mt-2 d-block">Mantenha a constância para atingir 100%!</small>
             </div>
         </div>
 
@@ -95,6 +86,7 @@
                     <div class="btn-group" role="group">
                         <button type="button" class="btn btn-outline-secondary btn-tab active" id="btnTabQuestoes" onclick="mudarAba('questoes')">📊 Questões</button>
                         <button type="button" class="btn btn-outline-secondary btn-tab" id="btnTabRedacao" onclick="mudarAba('redacao')">📝 Redação</button>
+                        <button type="button" class="btn btn-outline-secondary btn-tab" id="btnTabTempo" onclick="mudarAba('tempo')">⏳ Tempo</button>
                     </div>
 
                     <div class="d-flex gap-2 align-items-center">
@@ -102,14 +94,9 @@
                             <input type="hidden" name="dias" th:value="${periodoSelecionado}">
                             <select name="materiaId" class="form-select form-select-sm" onchange="this.form.submit()" style="max-width: 180px;">
                                 <option value="">Todas as Matérias</option>
-                                <option th:each="materia : ${listaMaterias}" 
-                                        th:value="${materia.id}" 
-                                        th:text="${materia.nome}"
-                                        th:selected="${materia.id == materiaSelecionada}">
-                                </option>
+                                <option th:each="materia : ${listaMaterias}" th:value="${materia.id}" th:text="${materia.nome}" th:selected="${materia.id == materiaSelecionada}"></option>
                             </select>
                         </form>
-
                         <div class="btn-group">
                             <a th:href="@{/(dias=7, materiaId=${materiaSelecionada})}" th:classappend="${periodoSelecionado == 7} ? 'active'" class="btn btn-outline-primary btn-sm">7d</a>
                             <a th:href="@{/(dias=30, materiaId=${materiaSelecionada})}" th:classappend="${periodoSelecionado == 30} ? 'active'" class="btn btn-outline-primary btn-sm">30d</a>
@@ -122,12 +109,25 @@
             <div class="card-body">
                 <div id="containerQuestoes" style="display: block;">
                     <h6 class="text-center text-muted mb-3">Desempenho em Exercícios</h6>
-                    <canvas id="graficoQuestoes" style="max-height: 400px;"></canvas>
+                    <div style="height: 400px;"><canvas id="graficoQuestoes"></canvas></div>
                 </div>
+
                 <div id="containerRedacao" style="display: none;">
                     <h6 class="text-center text-muted mb-3">Evolução da Nota de Redação</h6>
-                    <canvas id="graficoRedacao" style="max-height: 400px;"></canvas>
-                    <p class="text-center text-muted small mt-2">Se a linha tocar o zero, significa que não houve redação naquele dia.</p>
+                    <div style="height: 400px;"><canvas id="graficoRedacao"></canvas></div>
+                </div>
+
+                <div id="containerTempo" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="text-center text-muted mb-3">Horas Estudadas por Dia</h6>
+                            <div style="height: 400px;"><canvas id="graficoHoras"></canvas></div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-center text-muted mb-3">Distribuição por Matéria</h6>
+                            <div style="height: 300px;"><canvas id="graficoPizza"></canvas></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -135,14 +135,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script th:inline="javascript">
+        // --- DADOS ---
         const labels = /*[[${graficoLabels}]]*/ [];
         const totalData = /*[[${graficoTotal}]]*/ [];
         const acertosData = /*[[${graficoAcertos}]]*/ [];
         const errosData = /*[[${graficoErros}]]*/ [];
         const redacaoData = /*[[${graficoRedacaoNotas}]]*/ [];
+        const horasData = /*[[${graficoHorasEstudadas}]]*/ []; // Novo
+        const pizzaLabels = /*[[${pizzaLabels}]]*/ []; // Novo
+        const pizzaDados = /*[[${pizzaDados}]]*/ []; // Novo
 
-        const ctxQ = document.getElementById('graficoQuestoes').getContext('2d');
-        new Chart(ctxQ, {
+        // 1. GRÁFICO QUESTÕES
+        new Chart(document.getElementById('graficoQuestoes'), {
             type: 'bar',
             data: {
                 labels: labels,
@@ -152,32 +156,49 @@
                     { label: 'Erros', data: errosData, backgroundColor: '#dc3545', borderRadius: 4 }
                 ]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { tooltip: { mode: 'index', intersect: false } } }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
 
-        const ctxR = document.getElementById('graficoRedacao').getContext('2d');
-        new Chart(ctxR, {
+        // 2. GRÁFICO REDAÇÃO
+        new Chart(document.getElementById('graficoRedacao'), {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{ label: 'Nota da Redação', data: redacaoData, borderColor: '#ffc107', backgroundColor: 'rgba(255, 193, 7, 0.2)', fill: true, tension: 0.3 }]
+                datasets: [{ label: 'Nota', data: redacaoData, borderColor: '#ffc107', backgroundColor: 'rgba(255, 193, 7, 0.2)', fill: true, tension: 0.3 }]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1000 } } }
         });
 
-        function mudarAba(tipo) {
-            const divQ = document.getElementById('containerQuestoes');
-            const divR = document.getElementById('containerRedacao');
-            const btnQ = document.getElementById('btnTabQuestoes');
-            const btnR = document.getElementById('btnTabRedacao');
+        // 3. GRÁFICO HORAS (BARRAS)
+        new Chart(document.getElementById('graficoHoras'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{ label: 'Horas Estudadas', data: horasData, backgroundColor: '#6610f2', borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: {display: true, text: 'Horas'} } } }
+        });
 
-            if (tipo === 'questoes') {
-                divQ.style.display = 'block'; divR.style.display = 'none';
-                btnQ.classList.add('active'); btnR.classList.remove('active');
-            } else {
-                divQ.style.display = 'none'; divR.style.display = 'block';
-                btnQ.classList.remove('active'); btnR.classList.add('active');
-            }
+        // 4. GRÁFICO PIZZA (MATÉRIAS)
+        new Chart(document.getElementById('graficoPizza'), {
+            type: 'doughnut', // ou 'pie'
+            data: {
+                labels: pizzaLabels,
+                datasets: [{ 
+                    data: pizzaDados, 
+                    backgroundColor: ['#fd7f6f', '#7eb0d5', '#b2e061', '#bd7ebe', '#ffb55a', '#ffee65', '#beb9db', '#fdcce5', '#8bd3c7'] 
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // CONTROLE DE ABAS
+        function mudarAba(tipo) {
+            ['questoes', 'redacao', 'tempo'].forEach(t => {
+                document.getElementById('container' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = (t === tipo) ? 'block' : 'none';
+                const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
+                if(t === tipo) btn.classList.add('active'); else btn.classList.remove('active');
+            });
         }
     </script>
 </body>
