@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Modo Foco</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #212529; color: white; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
+        .timer-display { font-size: 6rem; font-weight: bold; font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+        .card-dark { background-color: #343a40; border: none; border-radius: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="container text-center" style="max-width: 600px;">
+        <div class="mb-4">
+            <h1 class="text-white fw-light">⏱️ Modo Foco</h1>
+            <p class="text-white-50">Concentre-se no processo.</p>
+        </div>
+
+        <div class="card card-dark p-5 shadow-lg">
+            <div id="setupArea">
+                <div class="mb-4">
+                    <label class="form-label text-white-50">Vou estudar:</label>
+                    <select id="selectMateria" class="form-select form-select-lg bg-dark text-white border-secondary" onchange="carregarAssuntos(this.value)">
+                        <option value="" selected disabled>Escolha a Matéria...</option>
+                        <option th:each="materia : ${listaMaterias}" th:value="${materia.id}" th:text="${materia.nome}"></option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <select id="selectAssunto" class="form-select bg-dark text-white border-secondary" disabled>
+                        <option value="">Selecione a matéria acima ⬆️</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="timer-display my-4 text-white" id="display">00:00:00</div>
+
+            <div class="d-flex justify-content-center gap-3" id="controles">
+                <button class="btn btn-success btn-lg px-4 rounded-pill" onclick="iniciar()" id="btnStart">▶️ Iniciar</button>
+                <button class="btn btn-warning btn-lg px-4 rounded-pill d-none" onclick="pausar()" id="btnPause">⏸️ Pausar</button>
+                <button class="btn btn-danger btn-lg px-4 rounded-pill d-none" onclick="finalizar()" id="btnStop">⏹️ Salvar</button>
+            </div>
+
+            <form id="formSalvar" action="/salvar" method="post" style="display: none;">
+                <input type="hidden" name="data" id="inputData">
+                <input type="hidden" name="assuntoId" id="inputAssunto">
+                <input type="hidden" name="tempo" id="inputTempo">
+                <input type="hidden" name="total" value="0">
+                <input type="hidden" name="acertos" value="0">
+            </form>
+        </div>
+        
+        <div class="mt-4">
+            <a href="/" class="text-white-50 text-decoration-none small">← Voltar ao Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        let segundos = 0;
+        let intervalo = null;
+        let rodando = false;
+
+        function formatarTempo(segTotal) {
+            const h = Math.floor(segTotal / 3600);
+            const m = Math.floor((segTotal % 3600) / 60);
+            const s = segTotal % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function atualizarDisplay() {
+            document.getElementById('display').innerText = formatarTempo(segundos);
+        }
+
+        function iniciar() {
+            const assuntoId = document.getElementById('selectAssunto').value;
+            if (!assuntoId) { alert("Escolha uma matéria e assunto antes de começar!"); return; }
+            document.getElementById('selectMateria').disabled = true;
+            document.getElementById('selectAssunto').disabled = true;
+            document.getElementById('btnStart').classList.add('d-none');
+            document.getElementById('btnPause').classList.remove('d-none');
+            document.getElementById('btnStop').classList.remove('d-none');
+            rodando = true;
+            intervalo = setInterval(() => { segundos++; atualizarDisplay(); }, 1000);
+        }
+
+        function pausar() {
+            rodando = false;
+            clearInterval(intervalo);
+            document.getElementById('btnStart').innerText = "▶️ Continuar";
+            document.getElementById('btnStart').classList.remove('d-none');
+            document.getElementById('btnPause').classList.add('d-none');
+        }
+
+        function finalizar() {
+            pausar();
+            if (confirm("Deseja encerrar e salvar esse tempo de estudo?")) {
+                const hoje = new Date().toISOString().split('T')[0];
+                document.getElementById('inputData').value = hoje;
+                document.getElementById('inputAssunto').value = document.getElementById('selectAssunto').value;
+                document.getElementById('inputTempo').value = formatarTempo(segundos);
+                document.getElementById('formSalvar').submit();
+            }
+        }
+
+        async function carregarAssuntos(materiaId) {
+            const select = document.getElementById('selectAssunto');
+            select.innerHTML = '<option>Carregando...</option>';
+            try {
+                const r = await fetch(`/assuntos/por-materia/${materiaId}`);
+                const lista = await r.json();
+                select.innerHTML = '<option value="" disabled selected>Selecione o Assunto...</option>';
+                lista.forEach(a => {
+                    let opt = document.createElement('option');
+                    opt.value = a.id;
+                    opt.text = a.nome;
+                    select.appendChild(opt);
+                });
+                select.disabled = false;
+            } catch (e) { console.error(e); }
+        }
+    </script>
+</body>
+</html>

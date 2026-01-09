@@ -10,4 +10,5 @@ public class LogDeEstudosApplication {
 		SpringApplication.run(LogDeEstudosApplication.class, args);
 	}
 
+
 }

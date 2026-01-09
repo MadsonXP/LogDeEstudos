@@ -1,6 +1,7 @@
 package com.madson.logdeestudos.model;
 
 import java.time.LocalDate;
+import java.time.LocalTime; // <--- ÚNICA IMPORTAÇÃO NOVA NECESSÁRIA
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -20,8 +21,12 @@ public class Registro {
     private Integer totalQuestoes; // Nota Máxima (se for Redação)
     private Integer acertos;       // Nota Obtida (se for Redação)
     
-    // NOVO: Campo de texto livre para o usuário digitar o tema
+    // Campo de texto livre para o usuário digitar o tema
     private String tema; 
+
+    // --- NOVO CAMPO: TEMPO DE ESTUDO ---
+    private LocalTime tempo; 
+    // -----------------------------------
 
     @ManyToOne
     @JoinColumn(name = "assunto_id")
@@ -31,7 +36,8 @@ public class Registro {
         this.data = LocalDate.now();
     }
 
-    // Getters e Setters
+    // --- GETTERS E SETTERS ---
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -47,11 +53,18 @@ public class Registro {
     public String getTema() { return tema; }
     public void setTema(String tema) { this.tema = tema; }
 
+    // --- NOVOS GETTER E SETTER PARA O TEMPO ---
+    public LocalTime getTempo() { return tempo; }
+    public void setTempo(LocalTime tempo) { this.tempo = tempo; }
+    // ------------------------------------------
+
     public Assunto getAssunto() { return assunto; }
     public void setAssunto(Assunto assunto) { this.assunto = assunto; }
 
+    // --- SEUS MÉTODOS ORIGINAIS (MANTIDOS) ---
+
     public Double getAproveitamento() {
-        if (totalQuestoes == 0) return 0.0;
+        if (totalQuestoes == null || totalQuestoes == 0) return 0.0;
         return (double) acertos / totalQuestoes * 100;
     }
 
