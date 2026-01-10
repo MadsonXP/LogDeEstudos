@@ -1,7 +1,7 @@
 package com.madson.logdeestudos.model;
 
 import java.time.LocalDate;
-import java.time.LocalTime; // <--- ÚNICA IMPORTAÇÃO NOVA NECESSÁRIA
+import java.time.LocalTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,13 +24,20 @@ public class Registro {
     // Campo de texto livre para o usuário digitar o tema
     private String tema; 
 
-    // --- NOVO CAMPO: TEMPO DE ESTUDO ---
+    // --- TEMPO DE ESTUDO ---
     private LocalTime tempo; 
-    // -----------------------------------
+    // -----------------------
 
     @ManyToOne
     @JoinColumn(name = "assunto_id")
     private Assunto assunto;
+
+    // === NOVO: VINCULAR AO USUÁRIO ===
+    // Isso diz que o registro pertence a um usuário
+    @ManyToOne
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+    // =================================
 
     public Registro() {
         this.data = LocalDate.now();
@@ -53,15 +60,18 @@ public class Registro {
     public String getTema() { return tema; }
     public void setTema(String tema) { this.tema = tema; }
 
-    // --- NOVOS GETTER E SETTER PARA O TEMPO ---
     public LocalTime getTempo() { return tempo; }
     public void setTempo(LocalTime tempo) { this.tempo = tempo; }
-    // ------------------------------------------
 
     public Assunto getAssunto() { return assunto; }
     public void setAssunto(Assunto assunto) { this.assunto = assunto; }
 
-    // --- SEUS MÉTODOS ORIGINAIS (MANTIDOS) ---
+    // === GETTER E SETTER DO USUÁRIO (NOVO) ===
+    public Usuario getUsuario() { return usuario; }
+    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
+    // =========================================
+
+    // --- SEUS MÉTODOS ORIGINAIS (MANTIDOS IGUAIS) ---
 
     public Double getAproveitamento() {
         if (totalQuestoes == null || totalQuestoes == 0) return 0.0;
