@@ -24,7 +24,6 @@ public class UsuarioService implements UserDetailsService {
     @Autowired private PasswordEncoder encoder;
     @Autowired private JavaMailSender mailSender;
     
-    // Injeta o e-mail configurado no application.properties para usar como remetente
     @Value("${spring.mail.username}")
     private String emailRemetente;
 
@@ -34,26 +33,40 @@ public class UsuarioService implements UserDetailsService {
     }
 
     public void registrar(Usuario usuario, String siteURL) throws UnsupportedEncodingException, MessagingException {
-        // 1. Criptografar Senha
         usuario.setSenha(encoder.encode(usuario.getSenha()));
-        
-        // 2. Gerar Código de Verificação
         String codigo = UUID.randomUUID().toString();
         usuario.setCodigoVerificacao(codigo);
-        usuario.setAtivo(false); // Bloqueado até confirmar e-mail
-        
+        usuario.setAtivo(false);
         repo.save(usuario);
-        
-        // 3. Enviar E-mail
         enviarEmailVerificacao(usuario, siteURL);
     }
 
+    // --- ATUALIZAÇÃO SEGURA DE PERFIL ---
+    public void atualizarPerfil(Usuario usuarioLogado, String novoNome, String senhaAtual, String novaSenha) throws Exception {
+        // 1. Atualiza o nome sempre
+        usuarioLogado.setNome(novoNome);
+
+        // 2. Se a pessoa tentou digitar uma NOVA SENHA...
+        if (novaSenha != null && !novaSenha.isEmpty()) {
+            
+            // ... Verificamos se a SENHA ATUAL está correta
+            if (!encoder.matches(senhaAtual, usuarioLogado.getSenha())) {
+                throw new Exception("A senha atual está incorreta. Não foi possível alterar.");
+            }
+            
+            // Se estiver certa, criptografa e salva a nova
+            usuarioLogado.setSenha(encoder.encode(novaSenha));
+        }
+
+        repo.save(usuarioLogado);
+    }
+    // ------------------------------------
+
     private void enviarEmailVerificacao(Usuario usuario, String siteURL) throws MessagingException, UnsupportedEncodingException {
         String toAddress = usuario.getEmail();
-        String fromAddress = emailRemetente; // Pega do properties
+        String fromAddress = emailRemetente;
         String senderName = "StudyLog App";
         String subject = "Por favor, ative sua conta no StudyLog";
-        
         String verifyURL = siteURL + "/verificar?codigo=" + usuario.getCodigoVerificacao();
 
         String content = "<div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>"
@@ -67,12 +80,10 @@ public class UsuarioService implements UserDetailsService {
 
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
-
         helper.setFrom(fromAddress, senderName);
         helper.setTo(toAddress);
         helper.setSubject(subject);
-        helper.setText(content, true); // true = HTML
-
+        helper.setText(content, true);
         mailSender.send(message);
     }
 
@@ -82,7 +93,7 @@ public class UsuarioService implements UserDetailsService {
             return false;
         } else {
             user.setCodigoVerificacao(null);
-            user.setAtivo(true); // Desbloqueia a conta
+            user.setAtivo(true);
             repo.save(user);
             return true;
         }

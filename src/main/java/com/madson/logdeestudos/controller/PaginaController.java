@@ -13,9 +13,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,6 +29,7 @@ import com.madson.logdeestudos.repository.AssuntoRepository;
 import com.madson.logdeestudos.repository.MateriaRepository;
 import com.madson.logdeestudos.repository.RegistroRepository;
 import com.madson.logdeestudos.repository.UsuarioRepository;
+import com.madson.logdeestudos.service.UsuarioService;
 
 @Controller
 public class PaginaController {
@@ -34,14 +38,14 @@ public class PaginaController {
     private final AssuntoRepository assuntoRepository;
     private final MateriaRepository materiaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final UsuarioService usuarioService;
 
-    private final int META_SEMANAL = 50; 
-
-    public PaginaController(RegistroRepository registroRepository, AssuntoRepository assuntoRepository, MateriaRepository materiaRepository, UsuarioRepository usuarioRepository) {
+    public PaginaController(RegistroRepository registroRepository, AssuntoRepository assuntoRepository, MateriaRepository materiaRepository, UsuarioRepository usuarioRepository, UsuarioService usuarioService) {
         this.registroRepository = registroRepository;
         this.assuntoRepository = assuntoRepository;
         this.materiaRepository = materiaRepository;
         this.usuarioRepository = usuarioRepository;
+        this.usuarioService = usuarioService;
     }
 
     private Usuario getUsuarioLogado(Principal principal) {
@@ -49,6 +53,64 @@ public class PaginaController {
         String email = principal.getName();
         return usuarioRepository.findByEmail(email).orElse(null);
     }
+
+    @GetMapping("/login")
+    public String carregarLogin() {
+        return "login";
+    }
+
+    @GetMapping("/registrar")
+    public String carregarCadastroUsuario(Model model) {
+        model.addAttribute("usuario", new Usuario());
+        return "registro_usuario";
+    }
+
+    @PostMapping("/salvar-usuario")
+    public String salvarUsuario(@ModelAttribute Usuario usuario, HttpServletRequest request, Model model) {
+        try {
+            String siteURL = request.getRequestURL().toString().replace(request.getServletPath(), "");
+            usuarioService.registrar(usuario, siteURL);
+            return "registro_sucesso";
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro ao cadastrar: " + e.getMessage());
+            return "registro_usuario";
+        }
+    }
+
+    @GetMapping("/verificar")
+    public String verificarConta(@RequestParam("codigo") String codigo) {
+        boolean verificado = usuarioService.verificar(codigo);
+        return verificado ? "verificacao_sucesso" : "login?error";
+    }
+
+    // --- ROTAS DE PERFIL ---
+    @GetMapping("/perfil")
+    public String carregarPerfil(Model model, Principal principal) {
+        Usuario usuario = getUsuarioLogado(principal);
+        model.addAttribute("usuario", usuario);
+        return "perfil";
+    }
+
+    // 👇 O MÉTODO ATUALIZADO COM SENHA ATUAL 👇
+    @PostMapping("/atualizar-perfil")
+    public String atualizarPerfil(@RequestParam String nome, 
+                                  @RequestParam(required = false) String senhaAtual,
+                                  @RequestParam(required = false) String novaSenha,
+                                  Principal principal,
+                                  Model model) {
+        Usuario usuario = getUsuarioLogado(principal);
+        
+        try {
+            usuarioService.atualizarPerfil(usuario, nome, senhaAtual, novaSenha);
+            model.addAttribute("sucesso", "Perfil atualizado com sucesso!");
+        } catch (Exception e) {
+            model.addAttribute("erro", "Erro: " + e.getMessage());
+        }
+        
+        model.addAttribute("usuario", usuario);
+        return "perfil";
+    }
+    // ----------------------------------------
 
     @GetMapping("/cronometro")
     public String carregarCronometro(Model model) {
@@ -116,6 +178,7 @@ public class PaginaController {
         }
         model.addAttribute("foguinho", streak);
 
+        int META_SEMANAL = 50;
         LocalDate seteDiasAtras = LocalDate.now().minusDays(6);
         int questoesUltimaSemana = todos.stream().filter(r -> !r.getData().isBefore(seteDiasAtras)).filter(r -> r.getTema() == null || r.getTema().isEmpty()).mapToInt(Registro::getTotalQuestoes).sum();
         int porcentagemMeta = (int) ((double) questoesUltimaSemana / META_SEMANAL * 100);
@@ -152,15 +215,10 @@ public class PaginaController {
         List<Double> dadosHorasEstudadas = new ArrayList<>();
 
         boolean isModoAnual = (dias > 31); 
-        LocalDate dataInicioCalculada;
-
+        
         if (isModoAnual) { 
             LocalDate cursor = dataFim.minusDays(dias).withDayOfMonth(1);
-            dataInicioCalculada = cursor;
-            
-            // CORREÇÃO AQUI: Locale.forLanguageTag em vez de new Locale
             DateTimeFormatter fmtMes = DateTimeFormatter.ofPattern("MMM", Locale.forLanguageTag("pt-BR"));
-            
             while (!cursor.isAfter(dataFim)) {
                 YearMonth mesAtual = YearMonth.from(cursor);
                 List<Registro> rMes = registrosFiltrados.stream().filter(r -> YearMonth.from(r.getData()).equals(mesAtual)).collect(Collectors.toList());
@@ -170,7 +228,6 @@ public class PaginaController {
                 int t = qMes.stream().mapToInt(Registro::getTotalQuestoes).sum();
                 int a = qMes.stream().mapToInt(Registro::getAcertos).sum();
                 double mediaRedacao = redMes.stream().mapToInt(Registro::getAcertos).average().orElse(0);
-                
                 double segundosMes = rMes.stream().filter(r -> r.getTempo() != null).mapToDouble(r -> r.getTempo().toSecondOfDay()).sum();
                 
                 labels.add(cursor.format(fmtMes).toUpperCase());
@@ -181,7 +238,6 @@ public class PaginaController {
             }
         } else { 
             LocalDate cursor = dataFim.minusDays(dias - 1);
-            dataInicioCalculada = cursor;
             DateTimeFormatter fmtDia = DateTimeFormatter.ofPattern("dd/MM");
             while (!cursor.isAfter(dataFim)) {
                 LocalDate diaAtual = cursor;
@@ -192,7 +248,6 @@ public class PaginaController {
                 int t = qDia.stream().mapToInt(Registro::getTotalQuestoes).sum();
                 int a = qDia.stream().mapToInt(Registro::getAcertos).sum();
                 double mediaRedacao = redDia.stream().mapToInt(Registro::getAcertos).average().orElse(0);
-                
                 double segundosDia = rDia.stream().filter(r -> r.getTempo() != null).mapToDouble(r -> r.getTempo().toSecondOfDay()).sum();
 
                 labels.add(cursor.format(fmtDia));
@@ -203,7 +258,7 @@ public class PaginaController {
             }
         }
 
-        LocalDate dataCorte = dataInicioCalculada;
+        LocalDate dataCorte = isModoAnual ? dataFim.minusDays(dias).withDayOfMonth(1) : dataFim.minusDays(dias - 1);
         List<Registro> registrosDoPeriodo = registrosFiltrados.stream().filter(r -> !r.getData().isBefore(dataCorte)).filter(r -> r.getTempo() != null).collect(Collectors.toList());
         Map<String, Double> mapaMateriaTempo = new HashMap<>();
         for (Registro r : registrosDoPeriodo) {
