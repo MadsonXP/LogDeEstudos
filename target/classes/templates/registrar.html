@@ -2,163 +2,170 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Registro</title>
+    <title>Novo Registro - StudyLog</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>body { background-color: #f0f2f5; display: flex; align-items: center; min-height: 100vh; }</style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        /* === TEMA GLOBAL === */
+        body { background-color: #000000; color: #ffffff; font-family: 'Segoe UI', sans-serif; padding-top: 80px; }
+
+        /* === HEADER PADRÃO === */
+        .navbar { background-color: #000000; border-bottom: 1px solid #1c1f24; padding: 15px 0; }
+        .navbar-brand { font-weight: 800; color: #fff !important; font-size: 1.5rem; letter-spacing: -1px; }
+        .navbar-brand span { color: #10b981; }
+        .nav-link { color: #888 !important; font-weight: 600; margin-left: 20px; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { color: #10b981 !important; }
+        .btn-logout { border: 1px solid #333; color: #888; border-radius: 50px; padding: 5px 15px; font-size: 0.9rem; transition: 0.3s; background: transparent;}
+        .btn-logout:hover { border-color: #ef4444; color: #ef4444; }
+
+        /* === FORMULÁRIO === */
+        .card-form {
+            background-color: #1c1f24; border: 1px solid #2d333b; border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Inputs Estilo Dark (Igual Login) */
+        .form-control, .form-select {
+            background-color: #2b3038;
+            border: 1px solid #444c56;
+            color: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #2b3038;
+            border-color: #10b981;
+            color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+        }
+        .form-label {
+            color: #10b981; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px;
+        }
+        
+        .btn-save {
+            background-color: #10b981; border: none; font-weight: 800; padding: 12px;
+            color: #000; width: 100%; border-radius: 8px; text-transform: uppercase; transition: 0.3s;
+        }
+        .btn-save:hover { background-color: #059669; color: #fff; transform: translateY(-2px); }
+
+        /* Esconder campos dinamicamente */
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
-    <div class="container" style="max-width: 500px;">
-        <div class="card p-4 shadow-sm">
-            <h2 class="h4 mb-4 text-center">
-                <span th:text="${registro.id == null ? '📝 Novo Registro' : '✏️ Editar Registro'}"></span>
-            </h2>
-            
-            <form action="/salvar" method="post" onsubmit="return validarRegistro()">
+
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">🚀 StudyLog<span>.PRO</span></a>
+            <button class="navbar-toggler bg-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/historico">Histórico</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/novo">Novo Estudo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/cronometro">Cronômetro</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="/perfil" class="text-decoration-none fw-bold text-white small">Meu Perfil</a>
+                    <form th:action="@{/logout}" method="post" class="m-0">
+                        <button class="btn-logout" type="submit"><i class="bi bi-box-arrow-right"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
                 
-                <input type="hidden" name="id" th:value="${registro.id}">
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Data da Atividade</label>
-                    <input type="date" id="campoData" name="data" class="form-control" 
-                           th:value="${registro.data}" required>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-primary">⏱️ Tempo de Estudo (Opcional)</label>
-                    <input type="time" id="inputTempo" name="tempo" class="form-control" 
-                           th:value="${registro.tempo}">
-                    <div class="form-text">Preencha se quiser registrar apenas horas estudadas.</div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Disciplina</label>
-                    <select id="selectMateria" class="form-select" onchange="verificarMateria()">
-                        <option value="" selected disabled>Selecione...</option>
-                        <option th:each="materia : ${listaMaterias}" 
-                                th:value="${materia.id}" 
-                                th:text="${materia.nome}"
-                                th:selected="${registro.assunto != null && registro.assunto.materia.id == materia.id}">
-                        </option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Assunto / Gênero</label>
-                    <select name="assuntoId" id="selectAssunto" class="form-select" disabled required>
-                        <option value="" selected>Primeiro escolha a disciplina ⬆️</option>
-                    </select>
-                    <input type="hidden" id="assuntoAntigoId" th:value="${registro.assunto != null ? registro.assunto.id : ''}">
-                </div>
-
-                <div class="mb-3" id="divTema" style="display: none;">
-                    <label class="form-label fw-bold text-success">Tema da Redação</label>
-                    <input type="text" name="tema" class="form-control" 
-                           th:value="${registro.tema}" placeholder="Digite o tema...">
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col">
-                        <label class="form-label" id="lblTotal">Questões</label>
-                        <input type="number" id="inputTotal" name="total" class="form-control" 
-                               th:value="${registro.totalQuestoes}">
+                <div class="card-form p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold text-white">Registrar Atividade</h2>
+                        <p class="text-secondary">O que você estudou hoje?</p>
                     </div>
-                    <div class="col">
-                        <label class="form-label" id="lblAcertos">Acertos</label>
-                        <input type="number" id="inputAcertos" name="acertos" class="form-control" 
-                               th:value="${registro.acertos}">
-                    </div>
+
+                    <form th:action="@{/salvar}" th:object="${registro}" method="post">
+                        <input type="hidden" th:field="*{id}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Data</label>
+                            <input type="date" th:field="*{data}" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Assunto</label>
+                            <select name="assuntoId" id="selectAssunto" class="form-select" required>
+                                <option value="" disabled selected>Selecione...</option>
+                                <optgroup th:each="materia : ${listaMaterias}" th:label="${materia.nome}">
+                                    <option th:each="assunto : ${materia.assuntos}" 
+                                            th:value="${assunto.id}" 
+                                            th:text="${assunto.nome}"
+                                            th:data-tipo="${materia.nome == 'Redação' ? 'REDACAO' : 'QUESTOES'}"
+                                            th:selected="${registro.assunto != null && registro.assunto.id == assunto.id}">
+                                    </option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div id="areaQuestoes">
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Total Questões</label>
+                                    <input type="number" th:field="*{totalQuestoes}" class="form-control" min="0">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">Acertos</label>
+                                    <input type="number" th:field="*{acertos}" class="form-control" min="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="areaRedacao" class="hidden mb-3">
+                            <label class="form-label">Tema da Redação</label>
+                            <input type="text" th:field="*{tema}" class="form-control" placeholder="Ex: Impactos da IA...">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Tempo de Estudo (HH:MM)</label>
+                            <input type="time" th:field="*{tempo}" class="form-control">
+                        </div>
+
+                        <button type="submit" class="btn-save">
+                            <i class="bi bi-check-lg me-2"></i> Salvar Registro
+                        </button>
+                    </form>
                 </div>
 
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                    <a href="/historico" class="btn btn-outline-secondary">Cancelar</a>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
     <script>
-        function validarRegistro() {
-            const tempo = document.getElementById('inputTempo').value;
-            const total = document.getElementById('inputTotal').value;
-            const acertos = document.getElementById('inputAcertos').value;
+        const select = document.getElementById('selectAssunto');
+        const areaQuestoes = document.getElementById('areaQuestoes');
+        const areaRedacao = document.getElementById('areaRedacao');
 
-            // 1. Validação: Tem que ter OU Tempo OU Questões
-            // Se tempo vazio E (total vazio OU total zero) -> Bloqueia
-            if (!tempo && (!total || parseInt(total) <= 0)) {
-                alert("⚠️ Atenção!\n\nVocê precisa preencher ou o TEMPO de estudo ou a quantidade de QUESTÕES.");
-                return false;
-            }
+        function atualizarCampos() {
+            const opcao = select.options[select.selectedIndex];
+            const tipo = opcao.getAttribute('data-tipo');
 
-            // 2. Validação Matemática (se preencheu questões)
-            if (total && parseInt(total) > 0) {
-                if (parseInt(acertos) > parseInt(total)) {
-                    alert("🚫 Erro Matemático!\n\nAcertos não podem ser maiores que o Total.");
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        function bloquearDataFutura() {
-            const campoData = document.getElementById('campoData');
-            const hoje = new Date();
-            const yyyy = hoje.getFullYear();
-            const mm = String(hoje.getMonth() + 1).padStart(2, '0');
-            const dd = String(hoje.getDate()).padStart(2, '0');
-            campoData.max = `${yyyy}-${mm}-${dd}`;
-        }
-
-        async function verificarMateria() {
-            const selectMateria = document.getElementById('selectMateria');
-            const materiaId = selectMateria.value;
-            if(!materiaId) return;
-            const materiaNome = selectMateria.options[selectMateria.selectedIndex].text;
-            await carregarAssuntos(materiaId);
-            ajustarLayout(materiaNome);
-        }
-
-        async function carregarAssuntos(materiaId) {
-            const selectAssunto = document.getElementById('selectAssunto');
-            const assuntoAntigoId = document.getElementById('assuntoAntigoId').value;
-            selectAssunto.innerHTML = '<option>Carregando...</option>';
-            selectAssunto.disabled = true;
-            try {
-                const resp = await fetch(`/assuntos/por-materia/${materiaId}`);
-                const lista = await resp.json();
-                selectAssunto.innerHTML = '<option value="" disabled selected>Selecione...</option>';
-                lista.forEach(a => {
-                    let opt = document.createElement('option');
-                    opt.value = a.id;
-                    opt.text = a.nome;
-                    if (assuntoAntigoId && a.id == assuntoAntigoId) { opt.selected = true; }
-                    selectAssunto.appendChild(opt);
-                });
-                selectAssunto.disabled = false;
-            } catch (e) { console.error(e); }
-        }
-
-        function ajustarLayout(materiaNome) {
-            const divTema = document.getElementById('divTema');
-            const lblTotal = document.getElementById('lblTotal');
-            const lblAcertos = document.getElementById('lblAcertos');
-            if (materiaNome.includes('Redação')) {
-                divTema.style.display = 'block';
-                lblTotal.innerText = 'Nota Máxima';
-                lblAcertos.innerText = 'Minha Nota';
+            if (tipo === 'REDACAO') {
+                areaQuestoes.classList.add('hidden');
+                areaRedacao.classList.remove('hidden');
             } else {
-                divTema.style.display = 'none';
-                lblTotal.innerText = 'Questões';
-                lblAcertos.innerText = 'Acertos';
+                areaQuestoes.classList.remove('hidden');
+                areaRedacao.classList.add('hidden');
             }
         }
 
-        window.onload = function() {
-            bloquearDataFutura();
-            const selectMateria = document.getElementById('selectMateria');
-            if (selectMateria.value) { verificarMateria(); }
-        };
+        select.addEventListener('change', atualizarCampos);
+        // Rodar ao carregar (caso seja edição)
+        window.onload = atualizarCampos;
     </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
