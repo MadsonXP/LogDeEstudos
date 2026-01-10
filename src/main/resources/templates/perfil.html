@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Perfil</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">🚀 StudyLog</a>
+            <a href="/" class="btn btn-outline-light btn-sm">Voltar ao Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 600px;">
+        <div class="card shadow border-0">
+            <div class="card-body p-5">
+                <h2 class="fw-bold mb-4 text-primary">👤 Meu Perfil</h2>
+
+                <div th:if="${sucesso}" class="alert alert-success" th:text="${sucesso}"></div>
+                <div th:if="${erro}" class="alert alert-danger" th:text="${erro}"></div>
+
+                <form th:action="@{/atualizar-perfil}" method="post">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">E-mail</label>
+                        <input type="text" class="form-control" th:value="${usuario.email}" disabled>
+                        <div class="form-text">O e-mail não pode ser alterado.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Seu Nome</label>
+                        <input type="text" name="nome" class="form-control" th:value="${usuario.nome}" required>
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="text-secondary fw-bold mb-3">Mudar Senha</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-muted small">SENHA ATUAL (Obrigatória se for mudar)</label>
+                        <input type="password" name="senhaAtual" class="form-control">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted small">NOVA SENHA</label>
+                        <input type="password" name="novaSenha" class="form-control" placeholder="Deixe em branco para não mudar">
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold">SALVAR ALTERAÇÕES</button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center">
+                    <p class="text-muted">Deseja sair da sua conta?</p>
+                    <form th:action="@{/logout}" method="post">
+                        <button type="submit" class="btn btn-danger fw-bold w-100">
+                            🚪 SAIR DO PROGRAMA
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+</html>
