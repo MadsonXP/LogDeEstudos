@@ -6,10 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        /* TEMA GLOBAL */
         body { background-color: #000000; color: #ffffff; font-family: 'Segoe UI', sans-serif; padding-top: 80px; }
-        
-        /* HEADER PADRÃO */
         .navbar { background-color: #000000; border-bottom: 1px solid #1c1f24; padding: 15px 0; }
         .navbar-brand { font-weight: 800; color: #fff !important; font-size: 1.5rem; letter-spacing: -1px; }
         .navbar-brand span { color: #10b981; }
@@ -18,7 +15,6 @@
         .btn-logout { border: 1px solid #333; color: #888; border-radius: 50px; padding: 5px 15px; font-size: 0.9rem; transition: 0.3s; background: transparent;}
         .btn-logout:hover { border-color: #ef4444; color: #ef4444; }
 
-        /* ÁREA DO CRONÔMETRO */
         .card-timer {
             background: linear-gradient(145deg, #1c1f24, #15171b);
             border: 1px solid #2d333b; border-radius: 20px;
@@ -39,23 +35,12 @@
         .btn-pause { background-color: #f59e0b; color: #000; }
         .btn-stop { background-color: #ef4444; color: #fff; }
 
-        /* ÁREA DO FORMULÁRIO */
         .card-form { background-color: #1c1f24; border: 1px solid #2d333b; border-radius: 20px; padding: 30px; height: 100%; }
-        
-        .form-control, .form-select {
-            background-color: #2b3038; border: 1px solid #444c56; color: #fff; padding: 12px; border-radius: 8px;
-        }
-        .form-control:focus, .form-select:focus {
-            background-color: #2b3038; border-color: #10b981; color: #fff; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
-        }
+        .form-control, .form-select { background-color: #2b3038; border: 1px solid #444c56; color: #fff; padding: 12px; border-radius: 8px; }
+        .form-control:focus, .form-select:focus { background-color: #2b3038; border-color: #10b981; color: #fff; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2); }
         .form-label { color: #10b981; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .btn-save {
-            background-color: #10b981; border: none; font-weight: 800; padding: 15px; color: #000; 
-            width: 100%; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; margin-top: 20px;
-        }
+        .btn-save { background-color: #10b981; border: none; font-weight: 800; padding: 15px; color: #000; width: 100%; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; margin-top: 20px; }
         .btn-save:hover { background-color: #059669; }
-        
         .hidden { display: none; }
     </style>
 </head>
@@ -82,19 +67,15 @@
 
     <div class="container mt-5">
         <div class="row g-4">
-            
             <div class="col-lg-5">
                 <div class="card-timer">
                     <h3 class="text-secondary text-uppercase fs-6 fw-bold mb-3">Cronômetro de Foco</h3>
-                    
                     <div id="displayTempo" class="timer-display">00:00:00</div>
-                    
                     <div class="d-flex gap-3 justify-content-center">
                         <button onclick="iniciarCronometro()" class="btn-control btn-play" type="button"><i class="bi bi-play-fill"></i></button>
                         <button onclick="pausarCronometro()" class="btn-control btn-pause" type="button"><i class="bi bi-pause-fill"></i></button>
                         <button onclick="resetarCronometro()" class="btn-control btn-stop" type="button"><i class="bi bi-stop-fill"></i></button>
                     </div>
-                    
                     <p class="text-secondary mt-4 small" id="statusTimer">Pronto para começar?</p>
                 </div>
             </div>
@@ -102,10 +83,8 @@
             <div class="col-lg-7">
                 <div class="card-form">
                     <h2 class="fw-bold mb-4">📝 Registrar Atividade</h2>
-                    
                     <form th:action="@{/salvar}" th:object="${registro}" method="post">
                         <input type="hidden" th:field="*{id}" />
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Data</label>
@@ -150,70 +129,50 @@
                             <input type="text" th:field="*{tema}" class="form-control" placeholder="Sobre o que você escreveu?">
                         </div>
 
-                        <button type="submit" class="btn-save">
-                            <i class="bi bi-check-circle-fill me-2"></i> SALVAR ESTUDO
-                        </button>
+                        <button type="submit" class="btn-save"><i class="bi bi-check-circle-fill me-2"></i> SALVAR ESTUDO</button>
                     </form>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script>
-        // CRONÔMETRO
-        let timer;
-        let segundos = 0;
-        let rodando = false;
-
+        let timer; let segundos = 0; let rodando = false;
         function formatarTempo(seg) {
             const h = Math.floor(seg / 3600).toString().padStart(2, '0');
             const m = Math.floor((seg % 3600) / 60).toString().padStart(2, '0');
             const s = (seg % 60).toString().padStart(2, '0');
             return `${h}:${m}:${s}`;
         }
-
         function atualizarDisplay() {
             const tempoFormatado = formatarTempo(segundos);
             document.getElementById('displayTempo').innerText = tempoFormatado;
             document.getElementById('inputTempo').value = tempoFormatado;
         }
-
         function iniciarCronometro() {
             if (!rodando) {
                 rodando = true;
                 document.getElementById('statusTimer').innerText = "Foco total! 🚀";
                 document.getElementById('statusTimer').className = "text-success mt-4 small fw-bold";
-                timer = setInterval(() => {
-                    segundos++;
-                    atualizarDisplay();
-                }, 1000);
+                timer = setInterval(() => { segundos++; atualizarDisplay(); }, 1000);
             }
         }
-
         function pausarCronometro() {
-            rodando = false;
-            clearInterval(timer);
+            rodando = false; clearInterval(timer);
             document.getElementById('statusTimer').innerText = "Pausado.";
             document.getElementById('statusTimer').className = "text-warning mt-4 small";
         }
-
         function resetarCronometro() {
-            pausarCronometro();
-            segundos = 0;
-            atualizarDisplay();
+            pausarCronometro(); segundos = 0; atualizarDisplay();
             document.getElementById('statusTimer').innerText = "Pronto para começar?";
             document.getElementById('statusTimer').className = "text-secondary mt-4 small";
         }
 
-        // LÓGICA DO FORMULÁRIO
         function atualizarCampos() {
             const select = document.getElementById('selectAssunto');
             const areaQuestoes = document.getElementById('areaQuestoes');
             const areaRedacao = document.getElementById('areaRedacao');
-            
             const opcao = select.options[select.selectedIndex];
-            // Verifica se existe opção selecionada antes de pegar atributo
             if(opcao && !opcao.disabled) {
                 const tipo = opcao.getAttribute('data-tipo');
                 if (tipo === 'REDACAO') {
@@ -225,11 +184,8 @@
                 }
             }
         }
-        
-        // Inicia correto
         window.onload = atualizarCampos;
     </script>
-    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
