@@ -13,7 +13,7 @@
                 <span th:text="${registro.id == null ? '📝 Novo Registro' : '✏️ Editar Registro'}"></span>
             </h2>
             
-            <form action="/salvar" method="post" onsubmit="return validarNotas()">
+            <form action="/salvar" method="post" onsubmit="return validarRegistro()">
                 
                 <input type="hidden" name="id" th:value="${registro.id}">
 
@@ -21,7 +21,13 @@
                     <label class="form-label fw-bold">Data da Atividade</label>
                     <input type="date" id="campoData" name="data" class="form-control" 
                            th:value="${registro.data}" required>
-                    <div class="form-text text-muted">Você não pode selecionar datas futuras.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-primary">⏱️ Tempo de Estudo (Opcional)</label>
+                    <input type="time" id="inputTempo" name="tempo" class="form-control" 
+                           th:value="${registro.tempo}">
+                    <div class="form-text">Preencha se quiser registrar apenas horas estudadas.</div>
                 </div>
 
                 <div class="mb-3">
@@ -54,12 +60,12 @@
                     <div class="col">
                         <label class="form-label" id="lblTotal">Questões</label>
                         <input type="number" id="inputTotal" name="total" class="form-control" 
-                               th:value="${registro.totalQuestoes}" required>
+                               th:value="${registro.totalQuestoes}">
                     </div>
                     <div class="col">
                         <label class="form-label" id="lblAcertos">Acertos</label>
                         <input type="number" id="inputAcertos" name="acertos" class="form-control" 
-                               th:value="${registro.acertos}" required>
+                               th:value="${registro.acertos}">
                     </div>
                 </div>
 
@@ -72,28 +78,29 @@
     </div>
 
     <script>
-        // --- 1. NOVA VALIDAÇÃO DE NOTAS ---
-        function validarNotas() {
-            // Pega os valores digitados
-            const total = parseInt(document.getElementById('inputTotal').value);
-            const acertos = parseInt(document.getElementById('inputAcertos').value);
+        function validarRegistro() {
+            const tempo = document.getElementById('inputTempo').value;
+            const total = document.getElementById('inputTotal').value;
+            const acertos = document.getElementById('inputAcertos').value;
 
-            // Verifica se Acertos é maior que Total
-            if (acertos > total) {
-                alert("🚫 Erro Matemático!\n\nO número de ACERTOS (" + acertos + ") não pode ser maior que o TOTAL (" + total + ").\n\nPor favor, corrija os valores.");
-                return false; // Bloqueia o envio do formulário
-            }
-
-            // Verifica se digitou número negativo (opcional, mas bom ter)
-            if (total < 0 || acertos < 0) {
-                alert("🚫 Números negativos não são permitidos.");
+            // 1. Validação: Tem que ter OU Tempo OU Questões
+            // Se tempo vazio E (total vazio OU total zero) -> Bloqueia
+            if (!tempo && (!total || parseInt(total) <= 0)) {
+                alert("⚠️ Atenção!\n\nVocê precisa preencher ou o TEMPO de estudo ou a quantidade de QUESTÕES.");
                 return false;
             }
 
-            return true; // Deixa salvar se estiver tudo certo
+            // 2. Validação Matemática (se preencheu questões)
+            if (total && parseInt(total) > 0) {
+                if (parseInt(acertos) > parseInt(total)) {
+                    alert("🚫 Erro Matemático!\n\nAcertos não podem ser maiores que o Total.");
+                    return false;
+                }
+            }
+
+            return true;
         }
 
-        // --- 2. BLOQUEIO DE DATA (Mantido) ---
         function bloquearDataFutura() {
             const campoData = document.getElementById('campoData');
             const hoje = new Date();
@@ -103,7 +110,6 @@
             campoData.max = `${yyyy}-${mm}-${dd}`;
         }
 
-        // --- 3. LÓGICA DO FORMULÁRIO (Mantido) ---
         async function verificarMateria() {
             const selectMateria = document.getElementById('selectMateria');
             const materiaId = selectMateria.value;
