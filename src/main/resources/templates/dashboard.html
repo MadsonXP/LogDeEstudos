@@ -9,6 +9,7 @@
         .btn-tab.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
         .btn-tab { color: #6c757d; border-color: #dee2e6; }
         .progress-bar { transition: width 1s ease-in-out; }
+        #graficoPizza { cursor: pointer; }
     </style>
 </head>
 <body class="bg-light">
@@ -124,8 +125,9 @@
                             <div style="height: 400px;"><canvas id="graficoHoras"></canvas></div>
                         </div>
                         <div class="col-md-4">
-                            <h6 class="text-center text-muted mb-3">Distribuição por Matéria</h6>
+                            <h6 class="text-center text-muted mb-3">Distribuição (Horas)</h6>
                             <div style="height: 300px;"><canvas id="graficoPizza"></canvas></div>
+                            <small class="text-muted text-center d-block mt-2 fst-italic">Clique em "Outros" para ver detalhes</small>
                         </div>
                     </div>
                 </div>
@@ -133,19 +135,74 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalOutros" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Outras Matérias</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group list-group-flush" id="listaDetalhesOutros"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <script th:inline="javascript">
-        // --- DADOS ---
         const labels = /*[[${graficoLabels}]]*/ [];
         const totalData = /*[[${graficoTotal}]]*/ [];
         const acertosData = /*[[${graficoAcertos}]]*/ [];
         const errosData = /*[[${graficoErros}]]*/ [];
         const redacaoData = /*[[${graficoRedacaoNotas}]]*/ [];
-        const horasData = /*[[${graficoHorasEstudadas}]]*/ []; // Novo
-        const pizzaLabels = /*[[${pizzaLabels}]]*/ []; // Novo
-        const pizzaDados = /*[[${pizzaDados}]]*/ []; // Novo
+        const horasData = /*[[${graficoHorasEstudadas}]]*/ [];
+        const rawPizzaLabels = /*[[${pizzaLabels}]]*/ [];
+        const rawPizzaDados = /*[[${pizzaDados}]]*/ [];
 
-        // 1. GRÁFICO QUESTÕES
+        // --- 1. FUNÇÃO DE FORMATAÇÃO (Decimal -> Texto Bonito) ---
+        function formatarHora(decimal) {
+            if (!decimal) return "0s";
+            const totalSegundos = Math.round(decimal * 3600);
+            const h = Math.floor(totalSegundos / 3600);
+            const resto = totalSegundos % 3600;
+            const m = Math.floor(resto / 60);
+            const s = resto % 60;
+
+            let texto = "";
+            if (h > 0) texto += `${h}h `;
+            if (m > 0) texto += `${m}m `;
+            if (s > 0 && h === 0) texto += `${s}s`; // Mostra segundos se for pouco tempo
+            return texto.trim() || "0s";
+        }
+
+        // --- PROCESSAMENTO DA PIZZA ---
+        let processedLabels = [];
+        let processedData = [];
+        let detailsOutros = [];
+        const totalHorasPizza = rawPizzaDados.reduce((a, b) => a + b, 0);
+        let somaOutros = 0;
+
+        rawPizzaLabels.forEach((label, index) => {
+            const valor = rawPizzaDados[index];
+            const porcentagem = valor / totalHorasPizza;
+            if (porcentagem < 0.05) {
+                somaOutros += valor;
+                detailsOutros.push({ label: label, valor: valor });
+            } else {
+                processedLabels.push(label);
+                processedData.push(valor);
+            }
+        });
+
+        if (somaOutros > 0) {
+            processedLabels.push("Outros");
+            processedData.push(somaOutros);
+        }
+
+        // GRÁFICOS ANTIGOS
         new Chart(document.getElementById('graficoQuestoes'), {
             type: 'bar',
             data: {
@@ -159,7 +216,6 @@
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
 
-        // 2. GRÁFICO REDAÇÃO
         new Chart(document.getElementById('graficoRedacao'), {
             type: 'line',
             data: {
@@ -169,30 +225,78 @@
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1000 } } }
         });
 
-        // 3. GRÁFICO HORAS (BARRAS)
+        // --- 2. GRÁFICO DE BARRAS (COM FORMATAÇÃO) ---
         new Chart(document.getElementById('graficoHoras'), {
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: [{ label: 'Horas Estudadas', data: horasData, backgroundColor: '#6610f2', borderRadius: 4 }]
+                datasets: [{ label: 'Tempo Estudado', data: horasData, backgroundColor: '#6610f2', borderRadius: 4 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: {display: true, text: 'Horas'} } } }
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                scales: { y: { beginAtZero: true, title: {display: true, text: 'Horas'} } },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            // AQUI ESTÁ A MÁGICA: Converte 2.5 em "2h 30m"
+                            label: function(context) { 
+                                return formatarHora(context.raw); 
+                            }
+                        }
+                    }
+                }
+            }
         });
 
-        // 4. GRÁFICO PIZZA (MATÉRIAS)
-        new Chart(document.getElementById('graficoPizza'), {
-            type: 'doughnut', // ou 'pie'
+        // --- 3. GRÁFICO DE PIZZA (COM CLIQUE) ---
+        const chartPizza = new Chart(document.getElementById('graficoPizza'), {
+            type: 'doughnut',
             data: {
-                labels: pizzaLabels,
+                labels: processedLabels,
                 datasets: [{ 
-                    data: pizzaDados, 
-                    backgroundColor: ['#fd7f6f', '#7eb0d5', '#b2e061', '#bd7ebe', '#ffb55a', '#ffee65', '#beb9db', '#fdcce5', '#8bd3c7'] 
+                    data: processedData, 
+                    backgroundColor: ['#fd7f6f', '#7eb0d5', '#b2e061', '#bd7ebe', '#ffb55a', '#ffee65', '#beb9db', '#fdcce5', '#8595e1', '#b5bbe3', '#e6afb9'] 
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: { 
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let val = context.raw;
+                                let perc = ((val / totalHorasPizza) * 100).toFixed(1) + "%";
+                                return `${context.label}: ${formatarHora(val)} (${perc})`;
+                            }
+                        }
+                    }
+                },
+                onClick: (e, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const labelClicada = processedLabels[index];
+                        if (labelClicada === "Outros") {
+                            abrirModalOutros();
+                        }
+                    }
+                }
+            }
         });
 
-        // CONTROLE DE ABAS
+        function abrirModalOutros() {
+            const lista = document.getElementById('listaDetalhesOutros');
+            lista.innerHTML = "";
+            detailsOutros.sort((a, b) => b.valor - a.valor);
+            detailsOutros.forEach(item => {
+                const li = document.createElement('li');
+                li.className = "list-group-item d-flex justify-content-between align-items-center";
+                li.innerHTML = `${item.label} <span class="badge bg-secondary rounded-pill">${formatarHora(item.valor)}</span>`;
+                lista.appendChild(li);
+            });
+            const modal = new bootstrap.Modal(document.getElementById('modalOutros'));
+            modal.show();
+        }
+
         function mudarAba(tipo) {
             ['questoes', 'redacao', 'tempo'].forEach(t => {
                 document.getElementById('container' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = (t === tipo) ? 'block' : 'none';

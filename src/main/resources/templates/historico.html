@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Histórico</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 </head>
 <body class="bg-light">
 
@@ -21,46 +22,107 @@
     </nav>
 
     <div class="container" style="max-width: 1000px;">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h4 class="mb-4 text-secondary">📜 Histórico de Estudos</h4>
-                
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Data</th>
-                            <th>Atividade</th>
-                            <th class="text-center">Resultado</th>
-                            <th>Status</th>
-                            <th class="text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="registro : ${listaRegistros}">
-                            <td th:text="${#temporals.format(registro.data, 'dd/MM/yyyy')}"></td>
-                            <td>
-                                <div th:if="${registro.tema != null and !registro.tema.isEmpty()}">
-                                    <span class="badge bg-warning text-dark">Redação</span>
-                                    <span th:text="${registro.tema}" class="fw-bold d-block"></span>
-                                </div>
-                                <div th:unless="${registro.tema != null and !registro.tema.isEmpty()}">
-                                    <span th:text="${registro.assunto.materia.nome}" class="small text-muted fw-bold text-uppercase"></span>
-                                    <div th:text="${registro.assunto.nome}" class="fw-bold"></div>
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                <span th:text="${registro.acertos}" class="fw-bold"></span> / <span th:text="${registro.totalQuestoes}"></span>
-                            </td>
-                            <td><span th:text="${registro.status}" class="badge bg-light text-dark border"></span></td>
-                            <td class="text-center">
-                                <a th:href="@{/editar/{id}(id=${registro.id})}" class="btn btn-sm btn-outline-primary me-1">✏️</a>
-                                <a th:href="@{/deletar/{id}(id=${registro.id})}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Apagar?')">🗑️</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        
+        <h4 class="mb-3 text-secondary">📚 Histórico de Questões e Redações</h4>
+        <div class="card border-0 shadow-sm mb-5">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data</th>
+                                <th>Matéria / Assunto</th>
+                                <th>Desempenho</th>
+                                <th>Status</th>
+                                <th style="width: 100px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${listaQuestoes.isEmpty()}">
+                                <td colspan="5" class="text-center text-muted py-4">Nenhum exercício registrado ainda.</td>
+                            </tr>
+                            <tr th:each="registro : ${listaQuestoes}">
+                                <td class="fw-bold text-secondary" th:text="${#temporals.format(registro.data, 'dd/MM/yyyy')}"></td>
+                                
+                                <td>
+                                    <span class="badge bg-primary mb-1" th:text="${registro.assunto.materia.nome}"></span>
+                                    <div class="small text-muted" th:text="${registro.assunto.nome}"></div>
+                                    <div th:if="${registro.tema != null}" class="small text-success fw-bold mt-1">
+                                        <i class="bi bi-pen"></i> <span th:text="${registro.tema}"></span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="fw-bold" th:text="${registro.acertos}"></span> / <span th:text="${registro.totalQuestoes}"></span>
+                                    <span th:if="${registro.tema == null}">acertos</span>
+                                    <span th:if="${registro.tema != null}">pontos</span>
+                                </td>
+
+                                <td>
+                                    <span class="badge" 
+                                          th:classappend="${registro.aproveitamento >= 80 ? 'bg-success' : (registro.aproveitamento >= 50 ? 'bg-warning' : 'bg-danger')}"
+                                          th:text="${registro.status}">
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="btn-group">
+                                        <a th:href="@{/editar/{id}(id=${registro.id})}" class="btn btn-sm btn-outline-warning" title="Editar"><i class="bi bi-pencil"></i></a>
+                                        <a th:href="@{/deletar/{id}(id=${registro.id})}" class="btn btn-sm btn-outline-danger" title="Deletar" onclick="return confirm('Tem certeza?')"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+
+        <h4 class="mb-3 text-secondary">⏱️ Histórico de Tempo Focado</h4>
+        <div class="card border-0 shadow-sm mb-5">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data</th>
+                                <th>Matéria / Assunto</th>
+                                <th>Tempo de Estudo</th>
+                                <th style="width: 100px;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${listaTempo.isEmpty()}">
+                                <td colspan="4" class="text-center text-muted py-4">Nenhum tempo cronometrado ainda.</td>
+                            </tr>
+                            <tr th:each="registro : ${listaTempo}">
+                                <td class="fw-bold text-secondary" th:text="${#temporals.format(registro.data, 'dd/MM/yyyy')}"></td>
+                                
+                                <td>
+                                    <span class="badge bg-dark mb-1" th:text="${registro.assunto.materia.nome}"></span>
+                                    <div class="small text-muted" th:text="${registro.assunto.nome}"></div>
+                                </td>
+
+                                <td>
+                                    <h5 class="mb-0 text-primary">
+                                        <i class="bi bi-stopwatch"></i> 
+                                        <span th:text="${registro.tempo}"></span>
+                                    </h5>
+                                </td>
+
+                                <td>
+                                    <div class="btn-group">
+                                        <a th:href="@{/editar/{id}(id=${registro.id})}" class="btn btn-sm btn-outline-warning" title="Editar"><i class="bi bi-pencil"></i></a>
+                                        <a th:href="@{/deletar/{id}(id=${registro.id})}" class="btn btn-sm btn-outline-danger" title="Deletar" onclick="return confirm('Tem certeza?')"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 </body>
 </html>
