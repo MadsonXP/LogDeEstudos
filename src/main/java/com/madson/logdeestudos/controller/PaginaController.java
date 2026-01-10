@@ -1,5 +1,6 @@
 package com.madson.logdeestudos.controller;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
@@ -20,9 +21,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.madson.logdeestudos.model.Registro;
+import com.madson.logdeestudos.model.Usuario;
 import com.madson.logdeestudos.repository.AssuntoRepository;
 import com.madson.logdeestudos.repository.MateriaRepository;
 import com.madson.logdeestudos.repository.RegistroRepository;
+import com.madson.logdeestudos.repository.UsuarioRepository;
 
 @Controller
 public class PaginaController {
@@ -30,13 +33,21 @@ public class PaginaController {
     private final RegistroRepository registroRepository;
     private final AssuntoRepository assuntoRepository;
     private final MateriaRepository materiaRepository;
-    
+    private final UsuarioRepository usuarioRepository;
+
     private final int META_SEMANAL = 50; 
 
-    public PaginaController(RegistroRepository registroRepository, AssuntoRepository assuntoRepository, MateriaRepository materiaRepository) {
+    public PaginaController(RegistroRepository registroRepository, AssuntoRepository assuntoRepository, MateriaRepository materiaRepository, UsuarioRepository usuarioRepository) {
         this.registroRepository = registroRepository;
         this.assuntoRepository = assuntoRepository;
         this.materiaRepository = materiaRepository;
+        this.usuarioRepository = usuarioRepository;
+    }
+
+    private Usuario getUsuarioLogado(Principal principal) {
+        if (principal == null) return null;
+        String email = principal.getName();
+        return usuarioRepository.findByEmail(email).orElse(null);
     }
 
     @GetMapping("/cronometro")
@@ -52,15 +63,25 @@ public class PaginaController {
                                  @RequestParam(defaultValue = "0") Integer total, 
                                  @RequestParam(defaultValue = "0") Integer acertos, 
                                  @RequestParam(required = false) String tema,
-                                 @RequestParam(required = false) LocalTime tempo) {
+                                 @RequestParam(required = false) LocalTime tempo,
+                                 Principal principal) { 
         
         Registro registro = (id != null) ? registroRepository.findById(id).orElseThrow() : new Registro();
+        
+        if (id != null) {
+            Usuario dono = registro.getUsuario();
+            if (dono != null && !dono.getEmail().equals(principal.getName())) {
+                return "redirect:/historico"; 
+            }
+        }
+
         registro.setData(data);
         registro.setAssunto(assuntoRepository.findById(assuntoId).orElseThrow());
         registro.setTotalQuestoes(total);
         registro.setAcertos(acertos);
         registro.setTema(tema);
         registro.setTempo(tempo);
+        registro.setUsuario(getUsuarioLogado(principal));
         
         registroRepository.save(registro);
         return "redirect:/historico";
@@ -69,10 +90,16 @@ public class PaginaController {
     @GetMapping("/")
     public String carregarDashboard(@RequestParam(defaultValue = "7") Integer dias, 
                                     @RequestParam(required = false) Long materiaId, 
-                                    Model model) {
-        List<Registro> todos = registroRepository.findAll();
+                                    Model model,
+                                    Principal principal) {
+        
+        Usuario usuario = getUsuarioLogado(principal);
+        if (usuario != null) {
+            model.addAttribute("nomeUsuario", usuario.getNome());
+        }
 
-        // --- LÓGICA DO DASHBOARD ---
+        List<Registro> todos = registroRepository.findByUsuario(usuario);
+
         int streak = 0;
         List<LocalDate> diasEstudados = todos.stream().map(Registro::getData).distinct().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
         if (!diasEstudados.isEmpty()) {
@@ -130,7 +157,10 @@ public class PaginaController {
         if (isModoAnual) { 
             LocalDate cursor = dataFim.minusDays(dias).withDayOfMonth(1);
             dataInicioCalculada = cursor;
-            DateTimeFormatter fmtMes = DateTimeFormatter.ofPattern("MMM", new Locale("pt", "BR"));
+            
+            // CORREÇÃO AQUI: Locale.forLanguageTag em vez de new Locale
+            DateTimeFormatter fmtMes = DateTimeFormatter.ofPattern("MMM", Locale.forLanguageTag("pt-BR"));
+            
             while (!cursor.isAfter(dataFim)) {
                 YearMonth mesAtual = YearMonth.from(cursor);
                 List<Registro> rMes = registrosFiltrados.stream().filter(r -> YearMonth.from(r.getData()).equals(mesAtual)).collect(Collectors.toList());
@@ -141,13 +171,12 @@ public class PaginaController {
                 int a = qMes.stream().mapToInt(Registro::getAcertos).sum();
                 double mediaRedacao = redMes.stream().mapToInt(Registro::getAcertos).average().orElse(0);
                 
-                // CORREÇÃO AQUI: Usar toSecondOfDay() para precisão total
                 double segundosMes = rMes.stream().filter(r -> r.getTempo() != null).mapToDouble(r -> r.getTempo().toSecondOfDay()).sum();
                 
                 labels.add(cursor.format(fmtMes).toUpperCase());
                 dadosTotal.add(t); dadosAcertos.add(a); dadosErros.add(t - a);
                 dadosRedacaoNotas.add((int) mediaRedacao);
-                dadosHorasEstudadas.add(segundosMes / 3600.0); // Converte segundos para horas (com decimal exato)
+                dadosHorasEstudadas.add(segundosMes / 3600.0);
                 cursor = cursor.plusMonths(1);
             }
         } else { 
@@ -164,7 +193,6 @@ public class PaginaController {
                 int a = qDia.stream().mapToInt(Registro::getAcertos).sum();
                 double mediaRedacao = redDia.stream().mapToInt(Registro::getAcertos).average().orElse(0);
                 
-                // CORREÇÃO AQUI: Usar toSecondOfDay()
                 double segundosDia = rDia.stream().filter(r -> r.getTempo() != null).mapToDouble(r -> r.getTempo().toSecondOfDay()).sum();
 
                 labels.add(cursor.format(fmtDia));
@@ -180,7 +208,6 @@ public class PaginaController {
         Map<String, Double> mapaMateriaTempo = new HashMap<>();
         for (Registro r : registrosDoPeriodo) {
             String nomeMat = r.getAssunto().getMateria().getNome();
-            // CORREÇÃO AQUI: Usar toSecondOfDay()
             double segundos = r.getTempo().toSecondOfDay();
             mapaMateriaTempo.put(nomeMat, mapaMateriaTempo.getOrDefault(nomeMat, 0.0) + segundos);
         }
@@ -201,8 +228,13 @@ public class PaginaController {
     }
 
     @GetMapping("/historico")
-    public String carregarHistorico(Model model) {
-        List<Registro> todos = registroRepository.findAll().stream()
+    public String carregarHistorico(Model model, Principal principal) {
+        Usuario usuario = getUsuarioLogado(principal);
+        if (usuario != null) {
+            model.addAttribute("nomeUsuario", usuario.getNome());
+        }
+
+        List<Registro> todos = registroRepository.findByUsuario(usuario).stream()
                 .sorted(Comparator.comparing(Registro::getId).reversed())
                 .collect(Collectors.toList());
         
@@ -216,6 +248,7 @@ public class PaginaController {
 
         model.addAttribute("listaQuestoes", listaQuestoes);
         model.addAttribute("listaTempo", listaTempo);
+        
         return "historico";
     }
 
@@ -227,16 +260,28 @@ public class PaginaController {
     }
 
     @GetMapping("/editar/{id}")
-    public String carregarEdicao(@PathVariable Long id, Model model) {
+    public String carregarEdicao(@PathVariable Long id, Model model, Principal principal) {
         Registro antigo = registroRepository.findById(id).orElseThrow();
+        
+        Usuario dono = antigo.getUsuario();
+        if (dono != null && !dono.getEmail().equals(principal.getName())) {
+            return "redirect:/historico"; 
+        }
+
         model.addAttribute("listaMaterias", materiaRepository.findAll());
         model.addAttribute("registro", antigo);
         return "registrar";
     }
 
     @GetMapping("/deletar/{id}")
-    public String deletarRegistro(@PathVariable Long id) {
-        registroRepository.deleteById(id);
+    public String deletarRegistro(@PathVariable Long id, Principal principal) {
+        Registro registro = registroRepository.findById(id).orElseThrow();
+        
+        Usuario dono = registro.getUsuario();
+        if (dono != null && dono.getEmail().equals(principal.getName())) {
+            registroRepository.deleteById(id);
+        }
+        
         return "redirect:/historico";
     }
 }
