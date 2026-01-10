@@ -4,117 +4,190 @@
     <meta charset="UTF-8">
     <title>Entrar - StudyLog</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* === CONFIGURAÇÕES GERAIS === */
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000000; /* PRETO TOTAL */
+            color: white;
+            overflow-x: hidden;
         }
 
-        body {
-            background-color: #0f1012; /* Fundo quase preto */
+        .row-full { height: 100vh; }
+
+        /* === LADO ESQUERDO (VISUAL) === */
+        .left-side {
+            /* Imagem com filtro VERDE */
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(16, 185, 129, 0.2)), 
+                        url('https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+        }
+
+        .quote-box {
+            border-left: 5px solid #10b981; /* BARRA VERDE */
+            padding-left: 25px;
+            animation: fadeInLeft 1s ease-out;
+        }
+
+        .quote-text {
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 20px;
             color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            height: 100vh;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+        }
+
+        .quote-author {
+            font-size: 1.1rem;
+            color: #10b981; /* AUTOR EM VERDE */
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        /* === LADO DIREITO (FORMULÁRIO) === */
+        .right-side {
+            background-color: #050505; /* Preto Suave */
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 40px;
         }
 
-        .card {
-            background-color: #1c1f24; /* Cinza azulado muito escuro */
-            border: 1px solid #2d333b;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        .login-container {
             width: 100%;
             max-width: 400px;
-            animation: fadeInUp 0.6s ease-out;
+            animation: fadeInUp 0.8s ease-out;
         }
 
+        /* === CAIXAS DE DIGITAÇÃO (CORRIGIDO) === */
         .form-control {
-            background-color: #2b3038; /* Input mais claro que o fundo */
-            border: 1px solid #444c56;
-            color: #ffffff; /* Texto digitado bem branco */
-            padding: 14px; /* Mais espaço para ler */
+            background-color: #1a1a1a; /* Fundo cinza escuro para destacar do preto */
+            border: 1px solid #333;
+            color: #ffffff !important; /* TEXTO BRANCO BRILHANTE */
+            padding: 15px;
+            font-size: 1.1rem;
             border-radius: 8px;
-            font-size: 1rem;
+        }
+
+        /* Cor do texto de "dica" (Placeholder) */
+        .form-control::placeholder {
+            color: #888888; /* Cinza claro para ler fácil */
+            opacity: 1;
         }
 
         .form-control:focus {
-            background-color: #2b3038;
-            border-color: #3b82f6;
-            color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); /* Aura azul */
-        }
-
-        .form-control::placeholder {
-            color: #8b949e; /* Placeholder visível mas suave */
+            background-color: #1a1a1a;
+            border-color: #10b981; /* BORDA VERDE AO DIGITAR */
+            color: #ffffff !important;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
         }
 
         .form-label {
             font-size: 0.9rem;
-            color: #e6edf3; /* Quase branco total - ALTO CONTRASTE */
+            color: #10b981; /* TEXTO DA ETIQUETA VERDE */
+            font-weight: 700;
             margin-bottom: 8px;
-            font-weight: 600;
-            display: block; /* Garante que fique em cima */
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
+        /* BOTÃO PRINCIPAL VERDE */
         .btn-primary {
-            background-color: #3b82f6; /* Azul padrão */
+            background: #10b981;
             border: none;
-            padding: 14px;
-            font-weight: 700;
-            font-size: 1rem;
+            padding: 15px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #000; /* Texto preto para alto contraste no verde */
             border-radius: 8px;
-            transition: transform 0.2s, background-color 0.2s;
+            transition: all 0.3s;
+            text-transform: uppercase;
         }
 
         .btn-primary:hover {
-            background-color: #2563eb;
+            background-color: #059669;
             transform: translateY(-2px);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
         }
 
         .link-minimal {
-            color: #3b82f6;
+            color: #888;
             text-decoration: none;
             font-weight: 600;
+            transition: all 0.2s;
         }
         
         .link-minimal:hover {
-            color: #60a5fa;
-            text-decoration: underline;
+            color: #10b981; /* Verde ao passar o mouse */
         }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+
+        @media (max-width: 991px) { .left-side { display: none; } }
     </style>
 </head>
 <body>
 
-    <div class="card p-5">
-        <div class="text-center mb-5">
-            <h1 class="h3 fw-bold text-white">🚀 StudyLog</h1>
-            <p class="text-secondary">Foco total nos estudos.</p>
-        </div>
-
-        <div th:if="${param.error}" class="alert alert-danger bg-danger bg-opacity-10 border-danger text-danger text-center p-2 mb-4">
-            E-mail ou senha incorretos.
-        </div>
-        <div th:if="${param.logout}" class="alert alert-success bg-success bg-opacity-10 border-success text-success text-center p-2 mb-4">
-            Você saiu com segurança.
-        </div>
-
-        <form th:action="@{/login}" method="post">
-            <div class="mb-4">
-                <label class="form-label">SEU E-MAIL</label>
-                <input type="email" name="email" class="form-control" placeholder="Digite seu e-mail..." required>
-            </div>
-            <div class="mb-5">
-                <label class="form-label">SUA SENHA</label>
-                <input type="password" name="password" class="form-control" placeholder="Digite sua senha..." required>
-            </div>
+    <div class="container-fluid">
+        <div class="row row-full">
             
-            <button type="submit" class="btn btn-primary w-100 mb-4">ACESSAR SISTEMA</button>
-        </form>
-        
-        <div class="text-center pt-3 border-top border-secondary border-opacity-25">
-            <a href="/registrar" class="link-minimal">Criar uma conta nova</a>
+            <div class="col-lg-7 left-side">
+                <div class="quote-box">
+                    <p class="quote-text">"O sucesso é a soma de pequenos esforços repetidos dia após dia."</p>
+                    <p class="quote-author">— Robert Collier</p>
+                </div>
+            </div>
+
+            <div class="col-lg-5 right-side">
+                <div class="login-container">
+                    
+                    <div class="mb-5 text-center">
+                        <h1 class="h2 fw-bold text-white mb-2">🚀 Bem-vindo</h1>
+                        <p class="text-secondary">Faça login na sua conta.</p>
+                    </div>
+
+                    <div th:if="${param.error}" class="alert alert-danger bg-danger bg-opacity-10 border-danger text-danger d-flex align-items-center gap-2">
+                        <i class="bi bi-x-circle-fill"></i> E-mail ou senha incorretos.
+                    </div>
+                    <div th:if="${param.logout}" class="alert alert-success bg-success bg-opacity-10 border-success text-success d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill"></i> Logout realizado.
+                    </div>
+
+                    <form th:action="@{/login}" method="post">
+                        <div class="mb-4">
+                            <label class="form-label">E-MAIL</label>
+                            <input type="email" name="email" class="form-control" placeholder="Digite seu e-mail aqui..." required>
+                        </div>
+                        <div class="mb-5">
+                            <label class="form-label">SENHA</label>
+                            <input type="password" name="password" class="form-control" placeholder="Digite sua senha aqui..." required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 mb-4">
+                            ENTRAR AGORA
+                        </button>
+                    </form>
+                    
+                    <div class="text-center pt-3 border-top border-secondary border-opacity-25">
+                        <span class="text-secondary">Novo por aqui?</span>
+                        <a href="/registrar" class="link-minimal ms-2">Criar conta grátis</a>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
