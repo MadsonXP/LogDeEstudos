@@ -16,30 +16,27 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests((requests) -> requests
-                // Páginas Públicas (Login, Registro, CSS, H2-Console)
-                .requestMatchers("/login", "/registrar", "/salvar-usuario", "/verificar", "/css/**", "/js/**", "/h2-console/**").permitAll()
-                // Todo o resto exige estar logado
+                // 1. LIBERA O ACESSO PÚBLICO PARA ESSAS ROTAS
+                .requestMatchers("/login", "/registrar", "/salvar-usuario", "/verificar", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                // 2. TODAS AS OUTRAS EXIGEM LOGIN
                 .anyRequest().authenticated()
             )
             .formLogin((form) -> form
-                .loginPage("/login") // Nossa página HTML customizada
-                .usernameParameter("email") // O campo no form se chamará 'email'
-                .defaultSuccessUrl("/", true) // Se logar, vai pro Dashboard
+                .loginPage("/login") // Diz qual é a sua página HTML de login
+                .defaultSuccessUrl("/historico", true) // Redireciona para cá ao logar
                 .permitAll()
             )
             .logout((logout) -> logout
                 .logoutSuccessUrl("/login?logout")
                 .permitAll()
-            )
-            // Configuração necessária apenas para acessar o banco H2 sem erros de frame
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
-            .headers(headers -> headers.frameOptions(frame -> frame.disable()));
+            );
 
         return http.build();
     }
 
+    // Bean para criptografar as senhas (essencial para o login funcionar)
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // Criptografia forte para as senhas
+        return new BCryptPasswordEncoder();
     }
 }

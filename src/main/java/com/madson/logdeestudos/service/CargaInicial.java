@@ -2,6 +2,7 @@ package com.madson.logdeestudos.service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -10,7 +11,6 @@ import com.madson.logdeestudos.model.Assunto;
 import com.madson.logdeestudos.model.Materia;
 import com.madson.logdeestudos.repository.AssuntoRepository;
 import com.madson.logdeestudos.repository.MateriaRepository;
-
 @Component
 public class CargaInicial implements CommandLineRunner {
 
@@ -43,8 +43,7 @@ public class CargaInicial implements CommandLineRunner {
             Materia art = new Materia("Artes");
             Materia red = new Materia("Redação");
 
-            materiaRepository.saveAll(Arrays.asList(mat, port, hist, geo, fis, qui, bio, ing, fil, soc, lit, art, red));
-
+materiaRepository.saveAll(Objects.requireNonNull(Arrays.asList(mat, port, hist, geo, fis, qui, bio, ing, fil, soc, lit, art, red)));
             // --- 2. LISTA ULTRA DETALHADA (NÍVEL HARDCORE) ---
             List<Assunto> listaAssuntos = Arrays.asList(
                 
@@ -757,7 +756,7 @@ public class CargaInicial implements CommandLineRunner {
                 new Assunto("Questão Racial e de Gênero no Brasil", soc)
             );
 
-            assuntoRepository.saveAll(listaAssuntos);
+            assuntoRepository.saveAll(Objects.requireNonNull(listaAssuntos));
             System.out.println("--- 🚀 BANCO DEFINITIVO: TODAS AS MATÉRIAS E DETALHES CARREGADOS! ---");
         }
     }

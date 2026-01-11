@@ -32,6 +32,11 @@ public class RegistroController {
 
     @PostMapping
     public Registro criar(@RequestBody NovoRegistroRequest request) {
+        // CORREÇÃO: Validação de nulo
+        if (request.assuntoId == null) {
+            throw new IllegalArgumentException("O ID do assunto é obrigatório.");
+        }
+
         Assunto assunto = assuntoRepository.findById(request.assuntoId)
                 .orElseThrow(() -> new RuntimeException("Assunto não encontrado!"));
 
@@ -39,12 +44,10 @@ public class RegistroController {
         novo.setTotalQuestoes(request.totalQuestoes);
         novo.setAcertos(request.acertos);
         novo.setAssunto(assunto);
-        // A data já é preenchida automaticamente com hoje no construtor
 
         return registroRepository.save(novo);
     }
 
-    // Classe auxiliar para receber os dados
     public static class NovoRegistroRequest {
         public Long assuntoId;
         public Integer totalQuestoes;

@@ -15,4 +15,3 @@ com\madson\logdeestudos\repository\MateriaRepository.class
 com\madson\logdeestudos\service\CargaInicial.class
 com\madson\logdeestudos\repository\AssuntoRepository.class
 com\madson\logdeestudos\repository\RegistroRepository.class
-com\madson\logdeestudos\controller\PaginaController.class

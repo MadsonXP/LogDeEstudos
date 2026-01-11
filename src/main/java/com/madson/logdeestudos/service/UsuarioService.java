@@ -1,9 +1,9 @@
 package com.madson.logdeestudos.service;
 
-import com.madson.logdeestudos.model.Usuario;
-import com.madson.logdeestudos.repository.UsuarioRepository;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
+import java.util.Objects;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -14,8 +14,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.io.UnsupportedEncodingException;
-import java.util.UUID;
+import com.madson.logdeestudos.model.Usuario;
+import com.madson.logdeestudos.repository.UsuarioRepository;
+
+import jakarta.mail.MessagingException; // Importação Importante
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class UsuarioService implements UserDetailsService {
@@ -41,30 +44,22 @@ public class UsuarioService implements UserDetailsService {
         enviarEmailVerificacao(usuario, siteURL);
     }
 
-    // --- ATUALIZAÇÃO SEGURA DE PERFIL ---
     public void atualizarPerfil(Usuario usuarioLogado, String novoNome, String senhaAtual, String novaSenha) throws Exception {
-        // 1. Atualiza o nome sempre
         usuarioLogado.setNome(novoNome);
-
-        // 2. Se a pessoa tentou digitar uma NOVA SENHA...
         if (novaSenha != null && !novaSenha.isEmpty()) {
-            
-            // ... Verificamos se a SENHA ATUAL está correta
             if (!encoder.matches(senhaAtual, usuarioLogado.getSenha())) {
                 throw new Exception("A senha atual está incorreta. Não foi possível alterar.");
             }
-            
-            // Se estiver certa, criptografa e salva a nova
             usuarioLogado.setSenha(encoder.encode(novaSenha));
         }
-
         repo.save(usuarioLogado);
     }
-    // ------------------------------------
 
     private void enviarEmailVerificacao(Usuario usuario, String siteURL) throws MessagingException, UnsupportedEncodingException {
-        String toAddress = usuario.getEmail();
-        String fromAddress = emailRemetente;
+        // CORREÇÃO: Usamos Objects.requireNonNull para garantir que não são nulos
+        String toAddress = Objects.requireNonNull(usuario.getEmail(), "O e-mail do usuário não pode ser nulo");
+        String fromAddress = Objects.requireNonNull(emailRemetente, "O e-mail do remetente não está configurado");
+        
         String senderName = "StudyLog App";
         String subject = "Por favor, ative sua conta no StudyLog";
         String verifyURL = siteURL + "/verificar?codigo=" + usuario.getCodigoVerificacao();
@@ -80,10 +75,12 @@ public class UsuarioService implements UserDetailsService {
 
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
+        
         helper.setFrom(fromAddress, senderName);
         helper.setTo(toAddress);
         helper.setSubject(subject);
         helper.setText(content, true);
+        
         mailSender.send(message);
     }
 
