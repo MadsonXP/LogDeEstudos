@@ -54,6 +54,7 @@ public class PaginaController {
         return usuarioRepository.findByEmail(email).orElse(null);
     }
 
+    // --- LOGIN E CADASTRO ---
     @GetMapping("/login")
     public String carregarLogin() {
         return "login";
@@ -83,6 +84,7 @@ public class PaginaController {
         return verificado ? "verificacao_sucesso" : "login?error";
     }
 
+    // --- PERFIL ---
     @GetMapping("/perfil")
     public String carregarPerfil(Model model, Principal principal) {
         Usuario usuario = getUsuarioLogado(principal);
@@ -107,15 +109,23 @@ public class PaginaController {
         return "perfil";
     }
 
-    // --- AQUI ESTÁ A ROTA IMPORTANTE ---
+    // --- ROTAS SEPARADAS (VOLTAMOS AO ORIGINAL) ---
+
+    // 1. Rota para Registro Manual
     @GetMapping("/novo")
-    public String carregarNovoEstudo(Model model) {
+    public String carregarRegistroManual(Model model) {
         model.addAttribute("listaMaterias", materiaRepository.findAll());
         model.addAttribute("registro", new Registro());
-        // Aponta para o arquivo novo_estudo.html que você vai criar
-        return "novo_estudo";
+        return "registrar"; // Vai procurar registrar.html
     }
-    // ------------------------------------
+
+    // 2. Rota para Cronômetro
+    @GetMapping("/cronometro")
+    public String carregarCronometro(Model model) {
+        model.addAttribute("listaMaterias", materiaRepository.findAll());
+        model.addAttribute("registro", new Registro());
+        return "cronometro"; // Vai procurar cronometro.html
+    }
 
     @PostMapping("/salvar")
     public String salvarRegistro(@RequestParam(required = false) Long id, 
@@ -128,6 +138,7 @@ public class PaginaController {
                                  Principal principal) { 
         
         Registro registro = (id != null) ? registroRepository.findById(id).orElseThrow() : new Registro();
+        
         if (id != null) {
             Usuario dono = registro.getUsuario();
             if (dono != null && !dono.getEmail().equals(principal.getName())) {
@@ -170,7 +181,7 @@ public class PaginaController {
         }
         model.addAttribute("listaMaterias", materiaRepository.findAll());
         model.addAttribute("registro", antigo);
-        return "novo_estudo"; // Reutiliza a tela nova para editar
+        return "registrar"; // Edição usa a tela de registro manual
     }
 
     @GetMapping("/deletar/{id}")

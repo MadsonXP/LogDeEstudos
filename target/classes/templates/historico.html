@@ -7,8 +7,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         body { background-color: #000000; color: #ffffff; font-family: 'Segoe UI', sans-serif; padding-top: 80px; }
-        
-        /* HEADER PADRÃO */
         .navbar { background-color: #000000; border-bottom: 1px solid #1c1f24; padding: 15px 0; }
         .navbar-brand { font-weight: 800; color: #fff !important; font-size: 1.5rem; letter-spacing: -1px; }
         .navbar-brand span { color: #10b981; }
@@ -16,13 +14,9 @@
         .nav-link:hover, .nav-link.active { color: #10b981 !important; }
         .btn-logout { border: 1px solid #333; color: #888; border-radius: 50px; padding: 5px 15px; font-size: 0.9rem; transition: 0.3s; background: transparent;}
         .btn-logout:hover { border-color: #ef4444; color: #ef4444; }
-
-        /* TABELA ESTILIZADA */
         .table-custom { --bs-table-bg: #1c1f24; --bs-table-color: #fff; --bs-table-border-color: #333; }
         .table-custom th { color: #10b981; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
-        
         .badge-materia { background-color: #333; color: #fff; padding: 5px 10px; border-radius: 4px; font-weight: normal; }
-        
         .btn-action { color: #888; transition: 0.2s; }
         .btn-action:hover { color: #fff; }
         .btn-delete:hover { color: #ef4444; }
@@ -37,11 +31,11 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link active" href="/historico">Histórico</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/novo">Novo Estudo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/novo">Novo Registro</a></li>
                     <li class="nav-item"><a class="nav-link" href="/cronometro">Cronômetro</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
-                    <a href="/perfil" class="text-decoration-none fw-bold text-white small">Meu Perfil</a>
+                    <a href="/perfil" class="text-decoration-none fw-bold text-white small">Perfil</a>
                     <form th:action="@{/logout}" method="post" class="m-0">
                         <button class="btn-logout" type="submit"><i class="bi bi-box-arrow-right"></i></button>
                     </form>
